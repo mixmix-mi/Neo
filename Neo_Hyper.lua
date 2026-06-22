@@ -1,6 +1,6 @@
 -- ===== تعطيل المخرجات أولاً =====
-print = function() end
-pcall(function() end)
+--print = function() end
+--pcall(function() end)
 
 -- ===== تحميل WindUI =====
 local WindUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua"))()
