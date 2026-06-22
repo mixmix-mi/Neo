@@ -1,4 +1,3 @@
-
 -- ============================================
 -- قسم FPS, Ping & Timer مع fallback
 -- ============================================
@@ -221,6 +220,7 @@ end
 if FPSSection then
     FPSSection:Toggle({
         Title = "Show FPS, Ping & Timer",
+        Desc = "عرض لوحة الأداء",
         Icon = "activity",
         Value = false,
         Callback = function(state)
@@ -253,16 +253,18 @@ else
     warn("[FPS Panel] SettingsTab or FPSSection not found")
 end
 
+-- ============================================
+-- قسم Performance & Visuals
+-- ============================================
 local PerfSection = SettingsTab:Section({
     Title = "Performance & Visuals",
     Side = "Left",
     Collapsed = false,
 })
+
 -- ============================================
 -- 1. Invis Walls (Clear Invis Walls)
 -- ============================================
-local invisPartsEnabled = false
-
 local function getInvisPartsFolder()
     local success, folder = pcall(function()
         local gameFolder = workspace:FindFirstChild("Game")
@@ -498,9 +500,10 @@ PerfSection:Button({
 })
 
 print("[Settings] Performance & Visuals section loaded!")
--- ================================
+
+-- ============================================
 -- 2. Button Sizes (حجم الأزرار الطافية - Ocean Deep Style)
--- ================================
+-- ============================================
 local SizesSection = SettingsTab:Section({
     Title = "Button Sizes",
     Side = "Left",
@@ -592,9 +595,10 @@ SizesSection:Slider({
         WindUI:Notify({ Title = "Button Size", Content = "Size: " .. value, Duration = 1 })
     end,
 })
--- ================================
+
+-- ============================================
 -- 3. Button Positions (حفظ/تحميل مواقع الأزرار)
--- ================================
+-- ============================================
 local PositionsSection = SettingsTab:Section({
     Title = "Button Positions",
     Side = "Left",
@@ -703,9 +707,10 @@ PositionsSection:Button({
     Desc = "Resets all buttons to center of screen",
     Callback = ResetButtonPositions,
 })
--- ================================
+
+-- ============================================
 -- 4. زر إعادة تعيين الكل
--- ================================
+-- ============================================
 local ResetSection = SettingsTab:Section({
     Title = "Reset All",
     Side = "Left",
@@ -788,9 +793,9 @@ ResetSection:Button({
     end,
 })
 
--- ================================
+-- ============================================
 -- Themes Manager - Custom Themes
--- ================================
+-- ============================================
 
 local ThemesSection = SettingsTab:Section({
     Title = "Themes",
@@ -798,9 +803,9 @@ local ThemesSection = SettingsTab:Section({
     Collapsed = true,
 })
 
--- ================================
+-- ============================================
 -- Create Custom Theme Function
--- ================================
+-- ============================================
 local function CreateCustomTheme(name, colors)
     pcall(function()
         WindUI:AddTheme({
@@ -816,9 +821,9 @@ local function CreateCustomTheme(name, colors)
     end)
 end
 
--- ================================
+-- ============================================
 -- Custom Themes List
--- ================================
+-- ============================================
 local CustomThemes = {
     {
         Name = "Blood Moon",
@@ -982,37 +987,437 @@ local CustomThemes = {
 for _, theme in ipairs(CustomThemes) do
     CreateCustomTheme(theme.Name, theme.Colors)
 end
+
+-- ============================================
+-- Current Theme State
+-- ============================================
+local currentTheme = "Ocean Deep"
+
+-- ============================================
+-- Apply Theme Function
+-- ============================================
+local function ApplyTheme(themeName)
+    pcall(function()
+        WindUI:SetTheme(themeName)
+        currentTheme = themeName
+    end)
 end
-Theme(value)
-        WindUI:Notify({
-            Title = "Theme",
-            Content = "Theme changed to: " .. value,
-            Duration = 2,
-        })
-    end,
+
+-- ============================================
+-- Save Theme Function
+-- ============================================
+local function SaveTheme(themeName)
+    pcall(function()
+        writefile("Hyper_CurrentTheme.txt", themeName)
+    end)
+end
+
+-- ============================================
+-- Load Saved Theme
+-- ============================================
+local function LoadSavedTheme()
+    local success, data = pcall(function()
+        return readfile("Hyper_CurrentTheme.txt")
+    end)
+    if success and data then
+-- ============================================
+-- Config System - حفظ كل إعدادات السكربت
+-- ============================================
+
+-- التأكد من وجود تبويب Settings
+local SettingsTab = nil
+if Tabs and Tabs.Settings then
+    SettingsTab = Tabs.Settings
+else
+    SettingsTab = Window:Tab({
+        Title = "Settings",
+        Icon = "settings",
+        Locked = false
+    })
+end
+
+-- ============================================
+-- Config Manager - نظام الحفظ المتكامل
+-- ============================================
+local ConfigManager = Window.ConfigManager
+local mainConfig = ConfigManager:CreateConfig("Hyper_Settings")
+
+-- ============================================
+-- تسجيل جميع إعدادات السكربت
+-- ============================================
+
+-- 1. إعدادات FPS Panel
+local fpsToggle = SettingsTab:Toggle({
+    Title = "Show FPS Panel",
+    Flag = "FPSPanel",
+    Value = false,
+    Callback = function(state)
+        fpsTimerEnabled = state
+        if state then
+            fpsTimerGui = CreateFPSPanel()
+        else
+            if fpsTimerGui then
+                fpsTimerGui:Destroy()
+                fpsTimerGui = nil
+            end
+        end
+    end
+})
+mainConfig:Register("FPSPanel", fpsToggle)
+
+-- 2. إعدادات Themes
+local themeDropdown = SettingsTab:Dropdown({
+    Title = "Theme",
+    Flag = "Theme",
+    Values = {"Ocean Deep", "Crimson", "Dark", "Amethyst", "Blood Red"},
+    Default = "Ocean Deep",
+    Callback = function(value)
+        pcall(function() WindUI:SetTheme(value) end)
+    end
+})
+mainConfig:Register("Theme", themeDropdown)
+
+-- 3. إعدادات ESP
+local espToggle = Tabs.Visuals:Toggle({
+    Title = "ESP",
+    Flag = "ESPEnabled",
+    Value = false,
+    Callback = function(state)
+        PlayerESPEnabled = state
+        if state then
+            ClearPlayerESP()
+            UpdateAllPlayerESP()
+            if PlayerESPConnection then PlayerESPConnection:Disconnect() end
+            PlayerESPConnection = RunService.Heartbeat:Connect(UpdateAllPlayerESP)
+        else
+            if PlayerESPConnection then
+                PlayerESPConnection:Disconnect()
+                PlayerESPConnection = nil
+            end
+            ClearPlayerESP()
+        end
+    end
+})
+mainConfig:Register("ESPEnabled", espToggle)
+
+-- 4. إعدادات Highlight
+local highlightToggle = Tabs.Visuals:Toggle({
+    Title = "Player Highlight",
+    Flag = "HighlightEnabled",
+    Value = false,
+    Callback = function(state)
+        HighlightsEnabled = state
+        if state then
+            ClearAllHighlights()
+            UpdateAllHighlights()
+            if HighlightsConnection then HighlightsConnection:Disconnect() end
+            HighlightsConnection = RunService.Heartbeat:Connect(UpdateAllHighlights)
+        else
+            if HighlightsConnection then
+                HighlightsConnection:Disconnect()
+                HighlightsConnection = nil
+            end
+            ClearAllHighlights()
+        end
+    end
+})
+mainConfig:Register("HighlightEnabled", highlightToggle)
+
+-- 5. إعدادات FOV
+local fovSlider = Tabs.Player:Slider({
+    Title = "FOV",
+    Flag = "FOV",
+    Value = { Min = 1, Max = 120, Default = 70 },
+    Callback = function(value)
+        pcall(function()
+            if workspace.CurrentCamera then
+                workspace.CurrentCamera.FieldOfView = value
+            end
+        end)
+    end
+})
+mainConfig:Register("FOV", fovSlider)
+
+-- 6. إعدادات WalkSpeed
+local speedSlider = Tabs.Player:Slider({
+    Title = "Walk Speed",
+    Flag = "WalkSpeed",
+    Value = { Min = 0, Max = 500, Default = 16 },
+    Callback = function(value)
+        pcall(function()
+            if LP.Character and LP.Character:FindFirstChild("Humanoid") then
+                LP.Character.Humanoid.WalkSpeed = value
+            end
+        end)
+    end
+})
+mainConfig:Register("WalkSpeed", speedSlider)
+
+-- 7. إعدادات JumpPower
+local jumpSlider = Tabs.Player:Slider({
+    Title = "Jump Power",
+    Flag = "JumpPower",
+    Value = { Min = 0, Max = 500, Default = 50 },
+    Callback = function(value)
+        pcall(function()
+            if LP.Character and LP.Character:FindFirstChild("Humanoid") then
+                LP.Character.Humanoid.JumpPower = value
+            end
+        end)
+    end
+})
+mainConfig:Register("JumpPower", jumpSlider)
+
+-- 8. إعدادات Infinite Jump
+local infiniteJumpToggle = Tabs.Player:Toggle({
+    Title = "Infinite Jump",
+    Flag = "InfiniteJump",
+    Value = false,
+    Callback = function(state)
+        _G.InfiniteJump = state
+    end
+})
+mainConfig:Register("InfiniteJump", infiniteJumpToggle)
+
+-- 9. إعدادات No Clip
+local noClipToggle = Tabs.Player:Toggle({
+    Title = "No Clip",
+    Flag = "NoClip",
+    Value = false,
+    Callback = function(state)
+        _G.NoClip = state
+        if state then
+            local char = LP.Character
+            local hrp = char and char:FindFirstChild("HumanoidRootPart")
+            if hrp then hrp.CanCollide = false end
+        else
+            local char = LP.Character
+            local hrp = char and char:FindFirstChild("HumanoidRootPart")
+            if hrp then hrp.CanCollide = true end
+        end
+    end
+})
+mainConfig:Register("NoClip", noClipToggle)
+
+-- 10. إعدادات Anti AFK
+local antiAFKToggle = Tabs.Home:Toggle({
+    Title = "Anti AFK",
+    Flag = "AntiAFK",
+    Value = false,
+    Callback = function(state)
+        if state then
+            _G.AntiAFK = true
+            spawn(function()
+                while _G.AntiAFK do
+                    pcall(function()
+                        game:GetService("VirtualUser"):CaptureController()
+                        game:GetService("VirtualUser"):ClickButton2(Vector2.new())
+                    end)
+                    task.wait(60)
+                end
+            end)
+        else
+            _G.AntiAFK = false
+        end
+    end
+})
+mainConfig:Register("AntiAFK", antiAFKToggle)
+
+-- 11. إعدادات Auto Farm
+local autoFarmToggle = Tabs.Farm:Toggle({
+    Title = "Auto Farm",
+    Flag = "AutoFarm",
+    Value = false,
+    Callback = function(state)
+        _G.AutoFarm = state
+    end
+})
+mainConfig:Register("AutoFarm", autoFarmToggle)
+
+-- 12. إعدادات Bhop
+local bhopToggle = Tabs.Movement:Toggle({
+    Title = "Bunny Hop",
+    Flag = "Bhop",
+    Value = false,
+    Callback = function(state)
+        autoJumpEnabled = state
+        if state then
+            StartBhop()
+        else
+            StopBhop()
+        end
+    end
+})
+mainConfig:Register("Bhop", bhopToggle)
+
+-- 13. إعدادات Gravity
+local gravitySlider = Tabs.Movement:Slider({
+    Title = "Gravity",
+    Flag = "Gravity",
+    Value = { Min = 0, Max = 500, Default = 196.2 },
+    Callback = function(value)
+        workspace.Gravity = value
+    end
+})
+mainConfig:Register("Gravity", gravitySlider)
+
+-- 14. إعدادات Auto Carry
+local autoCarryToggle = Tabs.Misc:Toggle({
+    Title = "Auto Carry",
+    Flag = "AutoCarry",
+    Value = false,
+    Callback = function(state)
+        featureStates.AutoCarry = state
+        if state then
+            StartAutoCarry()
+        else
+            StopAutoCarry()
+        end
+    end
+})
+mainConfig:Register("AutoCarry", autoCarryToggle)
+
+-- 15. إعدادات Lag Switch
+local lagToggle = Tabs.Misc:Toggle({
+    Title = "Lag Switch",
+    Flag = "LagSwitch",
+    Value = false,
+    Callback = function(state)
+        lagSwitchEnabled = state
+    end
+})
+mainConfig:Register("LagSwitch", lagToggle)
+
+-- 16. إعدادات Demon Mode
+local demonToggle = Tabs.Misc:Toggle({
+    Title = "Demon Mode",
+    Flag = "DemonMode",
+    Value = false,
+    Callback = function(state)
+        demonEnabled = state
+    end
+})
+mainConfig:Register("DemonMode", demonToggle)
+
+-- 17. إعدادات No Fog
+local noFogToggle = Tabs.Visuals:Toggle({
+    Title = "No Fog",
+    Flag = "NoFog",
+    Value = false,
+    Callback = function(state)
+        local Lighting = game:GetService("Lighting")
+        if state then
+            originalFogEnd = Lighting.FogEnd
+            Lighting.FogEnd = 1000000
+        else
+            Lighting.FogEnd = originalFogEnd or 100000
+        end
+    end
+})
+mainConfig:Register("NoFog", noFogToggle)
+
+-- 18. إعدادات Full Bright
+local fullBrightToggle = Tabs.Visuals:Toggle({
+    Title = "Full Bright",
+    Flag = "FullBright",
+    Value = false,
+    Callback = function(state)
+        local Lighting = game:GetService("Lighting")
+        if state then
+            originalBrightness = Lighting.Brightness
+            originalAmbient = Lighting.Ambient
+            Lighting.Brightness = 2
+            Lighting.Ambient = Color3.fromRGB(255, 255, 255)
+            Lighting.OutdoorAmbient = Color3.fromRGB(255, 255, 255)
+        else
+            Lighting.Brightness = originalBrightness or 0.5
+            Lighting.Ambient = originalAmbient or Color3.fromRGB(127, 127, 127)
+            Lighting.OutdoorAmbient = Color3.fromRGB(127, 127, 127)
+        end
+    end
+})
+mainConfig:Register("FullBright", fullBrightToggle)
+
+-- ============================================
+-- قسم Config Controls في Settings
+-- ============================================
+local ConfigSection = SettingsTab:Section({
+    Title = "Config System",
+    Side = "Left",
+    Collapsed = false,
 })
 
-
-
-local themesText = "Custom Themes:\n\n"
-for _, theme in ipairs(CustomThemes) do
-    themesText = themesText .. "- " .. theme.Name .. " : " .. theme.Description .. "\n"
-end
-themesText = themesText .. "\nDefault Themes:\n- Crimson\n- Dark\n- Darker\n- Amethyst\n- Blood Red"
-
-
-
--- Reset Button
-ThemesSection:Button({
-    Title = "Reset Theme",
+-- حفظ جميع الإعدادات
+ConfigSection:Button({
+    Title = "Save All Settings",
+    Desc = "Save all script settings to config",
     Callback = function()
-        currentTheme = "Blood Moon"
-        ApplyTheme("Blood Moon")
-        SaveTheme("Blood Moon")
-        WindUI:Notify({
-            Title = "Theme",
-            Content = "Theme reset to Ocean Deep",
-            Duration = 2,
-        })
-    end,
+        pcall(function()
+            mainConfig:Save()
+            WindUI:Notify({
+                Title = "Config",
+                Content = "All settings saved!",
+                Duration = 2
+            })
+        end)
+    end
 })
+
+-- تحميل جميع الإعدادات
+ConfigSection:Button({
+    Title = "Load All Settings",
+    Desc = "Load all settings from config",
+    Callback = function()
+        pcall(function()
+            mainConfig:Load()
+            WindUI:Notify({
+                Title = "Config",
+                Content = "All settings loaded!",
+                Duration = 2
+            })
+        end)
+    end
+})
+
+-- حذف الإعدادات
+ConfigSection:Button({
+    Title = "Delete Config",
+    Desc = "Delete the config file",
+    Callback = function()
+        WindUI:Popup({
+            Title = "Delete Config",
+            Icon = "trash",
+            Content = "Are you sure you want to delete all settings?",
+            Buttons = {
+                {
+                    Title = "Cancel",
+                    Callback = function() end,
+                    Variant = "Tertiary",
+                },
+                {
+                    Title = "Delete",
+                    Icon = "trash",
+                    Callback = function()
+                        pcall(function()
+                            mainConfig:Delete()
+                            WindUI:Notify({
+                                Title = "Config",
+                                Content = "Config deleted!",
+                                Duration = 2
+                            })
+                        end)
+                    end,
+                    Variant = "Primary",
+                }
+            }
+        })
+    end
+})
+
+-- تحميل الإعدادات تلقائياً عند بدء السكربت
+pcall(function()
+    mainConfig:Load()
+    print("[Config] Settings loaded automatically!")
+end)
+
+print("[Config] System loaded with " .. #mainConfig:GetAll() .. " settings!")
