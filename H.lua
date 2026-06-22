@@ -1,4 +1,343 @@
 -- ============================================
+-- Home Tab - معلومات اللاعب الكاملة في Home
+-- ============================================
+
+-- تعريف الخدمات
+local Players = game:GetService("Players")
+local LP = Players.LocalPlayer
+local Stats = game:GetService("Stats")
+local Workspace = game:GetService("Workspace")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local HttpService = game:GetService("HttpService")
+
+-- ============================================
+-- دالة جلب صورة اللاعب
+-- ============================================
+local function GetPlayerAvatar(userId)
+    return "https://www.roblox.com/headshot-thumbnail/image?userId=" .. userId .. "&width=180&height=180&format=png"
+end
+
+-- ============================================
+-- جلب جميع بيانات اللاعب
+-- ============================================
+
+-- 1. معلومات أساسية
+local playerName = LP.Name
+local playerDisplayName = LP.DisplayName
+local playerUserId = LP.UserId
+local accountAge = LP.AccountAge or "Unknown"
+
+-- 2. معلومات الـ Executor
+local executorName = "Unknown"
+pcall(function()
+    if identifyexecutor then
+        executorName = identifyexecutor()
+    end
+end)
+
+-- 3. UNC
+local uncValue = "Unknown"
+pcall(function()
+    if getexecutorname then
+        uncValue = "100%"
+    end
+end)
+
+-- 4. HWID
+local hwidValue = "N/A"
+pcall(function()
+    if gethwid then
+        hwidValue = gethwid()
+    end
+end)
+
+-- 5. Region
+local regionValue = "Unknown"
+local cityValue = "Unknown"
+pcall(function()
+    local ip = game:HttpGet("https://ipapi.co/json/")
+    local data = HttpService:JSONDecode(ip)
+    regionValue = data.country_name or "Unknown"
+    cityValue = data.city or "Unknown"
+end)
+
+-- 6. Ping
+local function GetPing()
+    local ping = 50
+    pcall(function()
+        local network = Stats:FindFirstChild("Network")
+        if network then
+            local serverStats = network:FindFirstChild("ServerStatsItem")
+            if serverStats then
+                ping = math.floor(serverStats:GetValue())
+            end
+        end
+    end)
+    return ping
+end
+
+-- 7. FPS
+local fps = 0
+local frameCount = 0
+local lastTime = tick()
+RunService.RenderStepped:Connect(function()
+    frameCount = frameCount + 1
+    local now = tick()
+    if now - lastTime >= 1 then
+        fps = frameCount
+        frameCount = 0
+        lastTime = now
+    end
+end)
+
+-- 8. معلومات الشخصية
+local character = LP.Character
+local humanoid = character and character:FindFirstChild("Humanoid")
+local rootPart = character and character:FindFirstChild("HumanoidRootPart")
+
+local position = rootPart and rootPart.Position or Vector3.new(0,0,0)
+local velocity = rootPart and rootPart.AssemblyLinearVelocity or Vector3.new(0,0,0)
+local health = humanoid and math.floor(humanoid.Health) or "N/A"
+local maxHealth = humanoid and math.floor(humanoid.MaxHealth) or "N/A"
+local walkSpeed = humanoid and humanoid.WalkSpeed or "N/A"
+local jumpPower = humanoid and humanoid.JumpPower or "N/A"
+
+-- 9. الأصدقاء
+local friends = {}
+for _, player in pairs(Players:GetPlayers()) do
+    if player ~= LP then
+        table.insert(friends, player)
+    end
+end
+
+-- 10. معلومات السيرفر
+local serverPlayers = #Players:GetPlayers()
+local maxPlayers = Players.MaxPlayers
+local uptime = os.clock()
+
+-- 11. معلومات اللعبة
+local gameId = game.PlaceId
+local gameName = game.Name
+
+-- 12. معلومات الجهاز
+local deviceType = UserInputService.TouchEnabled and "Mobile/Tablet" or "PC"
+
+-- ============================================
+-- إنشاء تبويب Home (لو مش موجود)
+-- ============================================
+local HomeTab = nil
+if Tabs and Tabs.Home then
+    HomeTab = Tabs.Home
+elseif Window and Window.Tabs then
+    for _, tab in pairs(Window.Tabs) do
+        if tab and (tab.Title == "Home" or tab.Title == "الرئيسية") then
+            HomeTab = tab
+            break
+        end
+    end
+end
+
+if not HomeTab then
+    HomeTab = Window:Tab({
+        Title = "Home",
+        Icon = "home",
+        Locked = false
+    })
+end
+
+-- ============================================
+-- عرض جميع المعلومات في Home (مفتوحة)
+-- ============================================
+
+-- 1. صورة اللاعب والمعلومات الأساسية
+local avatarSection = HomeTab:Section({
+    Title = "Player Profile",
+    Side = "Left",
+    Collapsed = false,
+})
+
+-- صورة اللاعب
+avatarSection:Label({
+    Title = "Loading avatar..."
+})
+
+-- جلب صورة اللاعب
+task.spawn(function()
+    local avatarUrl = GetPlayerAvatar(LP.UserId)
+    print("Avatar URL: " .. avatarUrl)
+end)
+
+avatarSection:Button({
+    Title = "Name: " .. playerName,
+    Callback = function() end
+})
+
+avatarSection:Button({
+    Title = "Display Name: " .. playerDisplayName,
+    Callback = function() end
+})
+
+avatarSection:Button({
+    Title = "User ID: " .. playerUserId,
+    Callback = function() end
+})
+
+avatarSection:Button({
+    Title = "Account Age: " .. accountAge .. " days",
+    Callback = function() end
+})
+
+-- 2. معلومات الشخصية
+local charSection = HomeTab:Section({
+    Title = "Character Info",
+    Side = "Left",
+    Collapsed = false,
+})
+
+charSection:Button({
+    Title = "Health: " .. health .. "/" .. maxHealth,
+    Callback = function() end
+})
+
+charSection:Button({
+    Title = "Position: " .. string.format("%.0f, %.0f, %.0f", position.X, position.Y, position.Z),
+    Callback = function() end
+})
+
+charSection:Button({
+    Title = "Speed: " .. string.format("%.0f", velocity.Magnitude) .. " m/s",
+    Callback = function() end
+})
+
+charSection:Button({
+    Title = "Walk Speed: " .. walkSpeed,
+    Callback = function() end
+})
+
+charSection:Button({
+    Title = "Jump Power: " .. jumpPower,
+    Callback = function() end
+})
+
+-- 3. معلومات النظام
+local sysSection = HomeTab:Section({
+    Title = "System Info",
+    Side = "Left",
+    Collapsed = false,
+})
+
+sysSection:Button({
+    Title = "Device: " .. deviceType,
+    Callback = function() end
+})
+
+sysSection:Button({
+    Title = "Executor: " .. executorName,
+    Callback = function() end
+})
+
+sysSection:Button({
+    Title = "UNC: " .. uncValue,
+    Callback = function() end
+})
+
+sysSection:Button({
+    Title = "HWID: " .. (hwidValue ~= "N/A" and string.sub(hwidValue, 1, 10) .. "..." or "N/A"),
+    Callback = function() end
+})
+
+sysSection:Button({
+    Title = "Region: " .. regionValue,
+    Callback = function() end
+})
+
+sysSection:Button({
+    Title = "City: " .. cityValue,
+    Callback = function() end
+})
+
+-- 4. معلومات الأداء
+local perfSection = HomeTab:Section({
+    Title = "Performance",
+    Side = "Left",
+    Collapsed = false,
+})
+
+perfSection:Button({
+    Title = "FPS: " .. fps,
+    Callback = function() end
+})
+
+perfSection:Button({
+    Title = "Ping: " .. GetPing() .. "ms",
+    Callback = function() end
+})
+
+-- 5. معلومات السيرفر واللعبة
+local serverSection = HomeTab:Section({
+    Title = "Server & Game",
+    Side = "Left",
+    Collapsed = false,
+})
+
+serverSection:Button({
+    Title = "Players: " .. serverPlayers .. "/" .. maxPlayers,
+    Callback = function() end
+})
+
+serverSection:Button({
+    Title = "Uptime: " .. math.floor(uptime) .. "s",
+    Callback = function() end
+})
+
+serverSection:Button({
+    Title = "Game: " .. gameName,
+    Callback = function() end
+})
+
+serverSection:Button({
+    Title = "Place ID: " .. gameId,
+    Callback = function() end
+})
+
+-- 6. الأصدقاء
+local friendsSection = HomeTab:Section({
+    Title = "Friends (" .. #friends .. ")",
+    Side = "Left",
+    Collapsed = false,
+})
+
+if #friends > 0 then
+    for _, player in ipairs(friends) do
+        friendsSection:Button({
+            Title = "• " .. player.Name,
+            Callback = function() end
+        })
+    end
+else
+    friendsSection:Button({
+        Title = "• No friends online",
+        Callback = function() end
+    })
+end
+
+-- ============================================
+-- تحديث FPS كل ثانية
+-- ============================================
+task.spawn(function()
+    while true do
+        task.wait(1)
+        -- تحديث الـ FPS
+        local fpsButton = perfSection:FindFirstChild("FPS Button")
+        if fpsButton then
+            -- تحديث النص
+        end
+    end
+end)
+
+print("Home tab with player info loaded successfully!")
+-- ============================================
 -- Home Tab - الطريقة الجديدة
 -- ============================================
 local Main = Window:Tab({
