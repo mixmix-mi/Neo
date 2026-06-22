@@ -2,17 +2,6 @@
 -- تبويب VIP Server (مع Battlepass Modifications)
 -- ================================
 
-local VIPTab = Window:Tab({
-    Title = "VIP ",
-    Icon = "crown",
-    Collapsed = true,
-    Locked = false,
-})
-
--- ================================
--- تبويب VIP Server (مع Battlepass Modifications)
--- ================================
-
 -- تعريف الخدمات
 local Players = game:GetService("Players")
 local LP = Players.LocalPlayer
@@ -44,7 +33,7 @@ end
 -- ================================
 -- قسم VIP Tools
 -- ================================
-local VIPSections = MiscTab:Section({
+local VIPSections = VIPTab:Section({
     Title = "VIP Tools",
     Side = "Left",
     Collapsed = false,
