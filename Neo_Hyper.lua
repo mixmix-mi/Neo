@@ -48,13 +48,13 @@ local Window = WindUI:CreateWindow({
 -- 🔗 GitHub Module Links Configuration (Ordered)
 -- ============================================
 local files = {
-    {name = "Home",     url = "https://gist.githubusercontent.com/Moahmedmix/fb54abbb1534fb72e9e7f7accce37ae2/raw/0527462e85e82a526699fe78f1579ffdbce43d28/H.lua"},
-    {name = "Auto",     url = "https://gist.githubusercontent.com/Moahmedmix/fb54abbb1534fb72e9e7f7accce37ae2/raw/0527462e85e82a526699fe78f1579ffdbce43d28/A.lua"},
-    {name = "ESP",      url = "https://gist.githubusercontent.com/Moahmedmix/fb54abbb1534fb72e9e7f7accce37ae2/raw/0527462e85e82a526699fe78f1579ffdbce43d28/E.lua"},
-    {name = "Misc",     url = "https://gist.githubusercontent.com/Moahmedmix/fb54abbb1534fb72e9e7f7accce37ae2/raw/0527462e85e82a526699fe78f1579ffdbce43d28/M.lua"},
-    {name = "VIP",      url = "https://gist.githubusercontent.com/Moahmedmix/fb54abbb1534fb72e9e7f7accce37ae2/raw/0527462e85e82a526699fe78f1579ffdbce43d28/V.lua"},
-    {name = "Settings", url = "https://gist.githubusercontent.com/Moahmedmix/fb54abbb1534fb72e9e7f7accce37ae2/raw/0527462e85e82a526699fe78f1579ffdbce43d28/S.lua"},
-    {name = "Info",     url = "https://gist.githubusercontent.com/Moahmedmix/fb54abbb1534fb72e9e7f7accce37ae2/raw/0527462e85e82a526699fe78f1579ffdbce43d28/I.lua"}
+    {name = "Home",     url = "https://raw.githubusercontent.com/mixmix-mi/Neo/refs/heads/main/H.lua"},
+    {name = "Auto",     url = "https://raw.githubusercontent.com/mixmix-mi/Neo/refs/heads/main/A.lua"},
+    {name = "ESP",      url = "https://raw.githubusercontent.com/mixmix-mi/Neo/refs/heads/main/E.lua"},
+    {name = "Misc",     url = "https://raw.githubusercontent.com/mixmix-mi/Neo/refs/heads/main/M.lua"},
+    {name = "VIP",      url = "https://raw.githubusercontent.com/mixmix-mi/Neo/refs/heads/main/V.lua"},
+    {name = "Settings", url = "https://raw.githubusercontent.com/mixmix-mi/Neo/refs/heads/main/S.lua"},
+    {name = "Info",     url = "https://raw.githubusercontent.com/mixmix-mi/Neo/refs/heads/main/I.lua"}
 }
 
 -- ============================================
