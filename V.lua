@@ -18,23 +18,25 @@ local Players = game:GetService("Players")
 local LP = Players.LocalPlayer
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
--- البحث عن تبويب Misc
-local MiscTab = nil
-if Tabs and Tabs.Misc then
-    MiscTab = Tabs.Misc
+-- ================================
+-- البحث عن تبويب VIP أو إنشاؤه
+-- ================================
+local VIPTab = nil
+if Tabs and Tabs.VIP then
+    VIPTab = Tabs.VIP
 elseif Window and Window.Tabs then
     for _, tab in pairs(Window.Tabs) do
-        if tab and (tab.Title == "Misc" or tab.Title == "Miscellaneous") then
-            MiscTab = tab
+        if tab and (tab.Title == "VIP" or tab.Title == "VIP Server" or tab.Title == "Premium") then
+            VIPTab = tab
             break
         end
     end
 end
 
-if not MiscTab then
-    MiscTab = Window:Tab({
-        Title = "Misc",
-        Icon = "box",
+if not VIPTab then
+    VIPTab = Window:Tab({
+        Title = "VIP",
+        Icon = "crown",
         Locked = false
     })
 end
