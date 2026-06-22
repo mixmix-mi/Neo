@@ -1663,9 +1663,8 @@ end)
 print("[Hyper Pure Lag Switch] Loaded successfully without extras!")
 
 end)
-
-   -- ============================================
--- Carry System - حمل اللاعبين
+-- ============================================
+-- Auto Carry System - Floating Button (Blood Moon)
 -- ============================================
 
 -- البحث عن تبويب Misc
@@ -1703,6 +1702,7 @@ local CarrySection = MiscTab:Section({
 -- ============================================
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
+local CoreGui = game:GetService("CoreGui")
 local LP = Players.LocalPlayer
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -1728,16 +1728,15 @@ local AutoCarryToggle = CarrySection:Toggle({
             StopAutoCarry()
         end
         
-        -- تحديث الزر العائم لو موجود
         UpdateCarryFloatingButton()
     end
 })
 
 -- ============================================
--- 2. Toggle Carry GUI Button
+-- 2. Toggle Carry Floating Button
 -- ============================================
-local CarryGUIToggle = CarrySection:Toggle({
-    Title = "Carry GUI Button",
+CarrySection:Toggle({
+    Title = "Show Carry Button",
     Desc = "Show/hide floating carry button",
     Value = false,
     Callback = function(state)
@@ -1755,7 +1754,7 @@ local CarryGUIToggle = CarrySection:Toggle({
 -- ============================================
 -- 3. Carry Button Size
 -- ============================================
-local CarryButtonSizeInput = CarrySection:Input({
+CarrySection:Input({
     Title = "Carry Button Size",
     Desc = "Adjust floating button size (150-400)",
     Placeholder = "190",
@@ -1771,7 +1770,7 @@ local CarryButtonSizeInput = CarrySection:Input({
 -- ============================================
 -- 4. Carry Keybind
 -- ============================================
-local CarryKeybind = CarrySection:Keybind({
+CarrySection:Keybind({
     Title = "Auto Carry Keybind",
     Mode = "Toggle",
     Default = "F3",
@@ -1840,15 +1839,12 @@ end
 -- تحديث حجم الزر
 -- ============================================
 local function UpdateCarryButtonSize(size)
-    local CoreGui = game:GetService("CoreGui")
-    local existingScreenGui = CoreGui:FindFirstChild("AutoCarryButtonGUI")
-    
-    if existingScreenGui then
-        local button = existingScreenGui:FindFirstChild("GradientBtn")
-        if button then
+    if carryFloatingGui then
+        local btn = carryFloatingGui:FindFirstChildOfClass("TextButton")
+        if btn then
             local newWidth = math.max(150, math.min(size or 190, 400))
             local newHeight = math.max(60, math.min((size or 190) * 0.4, 160))
-            button.Size = UDim2.new(0, newWidth, 0, newHeight)
+            btn.Size = UDim2.new(0, newWidth, 0, newHeight)
         end
     end
 end
@@ -1860,118 +1856,121 @@ local function UpdateCarryFloatingButton()
     if carryFloatingGui then
         local btn = carryFloatingGui:FindFirstChildOfClass("TextButton")
         if btn then
-            local label = btn:FindFirstChild("TextLabel")
-            if label then
-                label.Text = featureStates.AutoCarry and "Auto Carry: On" or "Auto Carry: Off"
-            end
+            btn.Text = featureStates.AutoCarry and "CARRY: ON" or "CARRY: OFF"
+            btn.BackgroundColor3 = featureStates.AutoCarry and Color3.fromHex("#3d0000") or Color3.fromHex("#1a0000")
         end
     end
 end
 
 -- ============================================
--- إنشاء الزر العائم
+-- إنشاء الزر العائم (Blood Moon Style)
 -- ============================================
 local function CreateCarryFloatingButton()
-    local CoreGui = game:GetService("CoreGui")
-    
-    local oldGui = CoreGui:FindFirstChild("AutoCarryButtonGUI")
+    local oldGui = CoreGui:FindFirstChild("CarryFloatingButton")
     if oldGui then oldGui:Destroy() end
     
     local screenGui = Instance.new("ScreenGui")
-    screenGui.Name = "AutoCarryButtonGUI"
+    screenGui.Name = "CarryFloatingButton"
     screenGui.ResetOnSpawn = false
     screenGui.Parent = CoreGui
     
-    local btnWidth = 190
-    local btnHeight = 76
+    local button = Instance.new("TextButton")
+    button.Size = UDim2.new(0, 160, 0, 55)
+    local startX = (workspace.CurrentCamera.ViewportSize.X / 2) - 80
+    local startY = (workspace.CurrentCamera.ViewportSize.Y / 2) - 27
+    button.Position = UDim2.new(0, startX, 0, startY)
+    button.Text = "CARRY: OFF"
     
-    -- الخلفية
-    local background = Instance.new("Frame")
-    background.Name = "Background"
-    background.Size = UDim2.new(0, btnWidth, 0, btnHeight)
-    background.Position = UDim2.new(0.5, -btnWidth/2, 0.5, -btnHeight/2)
-    background.BackgroundColor3 = Color3.fromRGB(0, 8, 26)
-    background.BackgroundTransparency = 0.1
-    background.Parent = screenGui
+    -- 🩸 Blood Moon Colors
+    button.BackgroundColor3 = Color3.fromHex("#1a0000")
+    button.TextColor3 = Color3.fromHex("#ffcccc")
+    button.Font = Enum.Font.GothamBold
+    button.TextSize = 14
+    button.AutoButtonColor = false
+    button.Parent = screenGui
     
     local corner = Instance.new("UICorner")
     corner.CornerRadius = UDim.new(0.2, 0)
-    corner.Parent = background
+    corner.Parent = button
     
     local stroke = Instance.new("UIStroke")
-    stroke.Color = Color3.fromRGB(0, 51, 136)
+    stroke.Color = Color3.fromHex("#660000")
     stroke.Thickness = 2
-    stroke.Parent = background
+    stroke.Parent = button
     
-    -- النص
-    local label = Instance.new("TextLabel")
-    label.Name = "TextLabel"
-    label.Size = UDim2.new(1, 0, 1, 0)
-    label.BackgroundTransparency = 1
-    label.Text = featureStates.AutoCarry and "Auto Carry: On" or "Auto Carry: Off"
-    label.TextColor3 = Color3.fromRGB(180, 210, 255)
-    label.TextSize = 16
-    label.Font = Enum.Font.GothamBold
-    label.Parent = background
-    
-    -- زر النقر
-    local clicker = Instance.new("TextButton")
-    clicker.Name = "Clicker"
-    clicker.Size = UDim2.new(1, 0, 1, 0)
-    clicker.BackgroundTransparency = 1
-    clicker.Text = ""
-    clicker.Parent = background
-    
-    -- تأثير hover
-    clicker.MouseEnter:Connect(function()
-        background.BackgroundTransparency = 0.05
-        stroke.Color = Color3.fromRGB(51, 119, 255)
+    -- تأثيرات التمرير
+    button.MouseEnter:Connect(function()
+        button.BackgroundTransparency = 0.3
+        button.TextColor3 = Color3.fromRGB(255, 255, 255)
+        stroke.Color = Color3.fromHex("#ff4444")
     end)
     
-    clicker.MouseLeave:Connect(function()
-        background.BackgroundTransparency = 0.1
-        stroke.Color = Color3.fromRGB(0, 51, 136)
-    end)
-    
-    -- وظيفة الضغط
-    clicker.MouseButton1Click:Connect(function()
-        featureStates.AutoCarry = not featureStates.AutoCarry
-        label.Text = featureStates.AutoCarry and "Auto Carry: On" or "Auto Carry: Off"
-        AutoCarryToggle:SetValue(featureStates.AutoCarry)
-        
-        if featureStates.AutoCarry then
-            StartAutoCarry()
-        else
-            StopAutoCarry()
-        end
+    button.MouseLeave:Connect(function()
+        button.BackgroundTransparency = 0
+        button.TextColor3 = Color3.fromHex("#ffcccc")
+        stroke.Color = featureStates.AutoCarry and Color3.fromHex("#ff4444") or Color3.fromHex("#660000")
     end)
     
     -- نظام السحب
     local dragging = false
     local dragStart, startPos
     
-    background.InputBegan:Connect(function(input)
+    button.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
             dragging = true
             dragStart = input.Position
-            startPos = background.Position
-            stroke.Color = Color3.fromRGB(51, 119, 255)
+            startPos = button.Position
+            stroke.Color = Color3.fromHex("#ff4444")
+            button.Text = "DRAG..."
         end
     end)
     
-    background.InputChanged:Connect(function(input)
+    button.InputChanged:Connect(function(input)
         if dragging and (input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseMovement) then
             local delta = input.Position - dragStart
-            background.Position = UDim2.new(0, startPos.X.Offset + delta.X, 0, startPos.Y.Offset + delta.Y)
+            button.Position = UDim2.new(0, startPos.X.Offset + delta.X, 0, startPos.Y.Offset + delta.Y)
         end
     end)
     
-    background.InputEnded:Connect(function(input)
+    button.InputEnded:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
             dragging = false
-            stroke.Color = Color3.fromRGB(0, 51, 136)
+            stroke.Color = featureStates.AutoCarry and Color3.fromHex("#ff4444") or Color3.fromHex("#660000")
+            button.Text = featureStates.AutoCarry and "CARRY: ON" or "CARRY: OFF"
         end
     end)
+    
+    -- الضغط على الزر
+    local function handleTap()
+        if not dragging then
+            button.Text = "CARRY: ACTIVE"
+            button.BackgroundColor3 = Color3.fromHex("#3d0000")
+            stroke.Color = Color3.fromHex("#ff4444")
+            
+            featureStates.AutoCarry = not featureStates.AutoCarry
+            
+            if featureStates.AutoCarry then
+                StartAutoCarry()
+            else
+                StopAutoCarry()
+            end
+            
+            button.Text = featureStates.AutoCarry and "CARRY: ON" or "CARRY: OFF"
+            button.BackgroundColor3 = featureStates.AutoCarry and Color3.fromHex("#3d0000") or Color3.fromHex("#1a0000")
+            stroke.Color = featureStates.AutoCarry and Color3.fromHex("#ff4444") or Color3.fromHex("#660000")
+            
+            pcall(function()
+                if AutoCarryToggle then AutoCarryToggle:SetValue(featureStates.AutoCarry) end
+            end)
+            
+            if WindUI and WindUI.Notify then
+                WindUI:Notify({ Title = "Auto Carry", Content = featureStates.AutoCarry and "Enabled" or "Disabled", Duration = 2 })
+            end
+        end
+    end
+    
+    button.MouseButton1Click:Connect(handleTap)
+    button.TouchTap:Connect(handleTap)
     
     return screenGui
 end
@@ -1979,7 +1978,7 @@ end
 -- ============================================
 -- إشعار تحميل النظام
 -- ============================================
-print("Carry System loaded successfully!")                 
+print("Carry System loaded successfully!")            
 -- ============================================
 -- Demon Mode (Lag Switch + Character Rise)
 -- For Misc Tab
