@@ -53,7 +53,7 @@ local files = {
     {name = "ESP",      url = "https://raw.githubusercontent.com/mixmix-mi/Neo/refs/heads/main/E.lua"},
     {name = "Misc",     url = "https://raw.githubusercontent.com/mixmix-mi/Neo/refs/heads/main/M.lua"},
     {name = "VIP",      url = "https://raw.githubusercontent.com/mixmix-mi/Neo/refs/heads/main/V.lua"},
-    {name = "Settings", url = "https://raw.githubusercontent.com/mixmix-mi/Neo/refs/heads/main/S.lua"},
+    {name = "Settings", url = "https://raw.githubusercontent.com/mixmix-mi/Neo/refs/heads/main/SAS.lua"},
     {name = "Info",     url = "https://raw.githubusercontent.com/mixmix-mi/Neo/refs/heads/main/I.lua"}
 }
 
