@@ -78,9 +78,15 @@ local function GetPing()
 end
 
 -- 7. FPS
+-- تعريف الخدمات
+
+
+-- متغيرات FPS
 local fps = 0
 local frameCount = 0
 local lastTime = tick()
+
+-- حساب FPS كل ثانية
 RunService.RenderStepped:Connect(function()
     frameCount = frameCount + 1
     local now = tick()
@@ -90,6 +96,9 @@ RunService.RenderStepped:Connect(function()
         lastTime = now
     end
 end)
+
+-- استخدام الـ FPS
+print("FPS: " .. fps)
 
 -- 8. معلومات الشخصية
 local character = LP.Character
