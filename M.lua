@@ -1,11 +1,3 @@
-local Tabs = {
-    Misc = Window:Tab({ Title = "Misc", Icon = "solar:box-minimalistic-outline", Locked = false })
-}
-
-if not Tabs.Misc then
-    Tabs.Misc = Window:Tab({ Title = "Misc", Icon = "shapes", Locked = false })
-end
-
 -- ============================================
 -- Player Modifications
 -- ============================================
@@ -292,4 +284,88 @@ Section:Dropdown({
 
 Section:Space()
 
-print("✅ Player Modifications loaded in Misc tab!")
+local Section = MainTab:Section({ 
+    Title = "Emote modifications",
+})
+
+-- salva velocidades originais
+local originalEmoteSpeeds = {}
+local itemsFolder = game:GetService("ReplicatedStorage"):FindFirstChild("Items")
+if itemsFolder then
+    local emotesFolder = itemsFolder:FindFirstChild("Emotes")
+    if emotesFolder then
+        for _, module in ipairs(emotesFolder:GetChildren()) do
+            if module:IsA("ModuleScript") then
+                local ok, data = pcall(require, module)
+                if ok and data and data.EmoteInfo then
+                    originalEmoteSpeeds[module.Name] = data.EmoteInfo.SpeedMult
+                end
+            end
+        end
+    end
+end
+
+-- define velocidade para todos os emotes
+local function applyEmoteSpeed(v)
+    if not itemsFolder then return end
+    local emotesFolder = itemsFolder:FindFirstChild("Emotes")
+    if not emotesFolder then return end
+    
+    for _, module in ipairs(emotesFolder:GetChildren()) do
+        if module:IsA("ModuleScript") then
+            local ok, data = pcall(require, module)
+            if ok and data and data.EmoteInfo and data.EmoteInfo.SpeedMult ~= 0 then
+                data.EmoteInfo.SpeedMult = v
+            end
+        end
+    end
+end
+
+-- restaura velocidades originais
+local function restoreOriginal()
+    if not itemsFolder then return end
+    local emotesFolder = itemsFolder:FindFirstChild("Emotes")
+    if not emotesFolder then return end
+    
+    for _, module in ipairs(emotesFolder:GetChildren()) do
+        if module:IsA("ModuleScript") then
+            local original = originalEmoteSpeeds[module.Name]
+            if original then
+                local ok, data = pcall(require, module)
+                if ok and data and data.EmoteInfo then
+                    data.EmoteInfo.SpeedMult = original
+                end
+            end
+        end
+    end
+end
+
+-- valor atual usado no modo legit
+featureStates = featureStates or {}
+featureStates.EmoteSpeedValue = 2
+
+-- INPUT DE VELOCIDADE
+local emotespeed = MainTab:Input({
+    Title = "Emote Speed Value",
+    Description = "Changes the animation speed of your emotes",
+    Placeholder = "1500",
+    NumbersOnly = true,
+    Callback = function(value)
+        local num = tonumber(value)
+        if not num or num <= 0 then return end
+
+        featureStates.EmoteSpeedValue = num
+        local applied = num / 1000
+        applyEmoteSpeed(applied)   -- modo sempre legit
+    end
+})
+
+MainTab:Button({
+    Title = "Reset Emote Speed",
+    Description = "Restore default emote speed",
+    Callback = function()
+        restoreOriginal()
+    end
+})
+
+MainTab:Space()
