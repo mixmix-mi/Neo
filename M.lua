@@ -922,7 +922,235 @@ if WindUI and WindUI.Notify then
 end
 
 print("[Emote Speed] Module loaded successfully in Misc tab!")
+-- ============================================
+-- M.lua - Interactions & Revive
+-- ============================================
 
+-- تعريف الخدمات
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+local LocalPlayer = Players.LocalPlayer
+local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
+
+-- ============================================
+-- Revive System
+-- ============================================
+local featureStates = { AutoSelfRevive = false, SelfReviveMethod = "Spawnpoint" }
+local lastSavedPosition = nil
+local AutoSelfReviveConnection = nil
+local respawnConnection = nil
+local hasRevived = false
+
+local function doRevive(char)
+    if not char then return end
+    local hrp = char:FindFirstChild("HumanoidRootPart")
+    local isDowned = char:GetAttribute("Downed")
+    if not isDowned then return end
+
+    if featureStates.SelfReviveMethod == "Spawnpoint" then
+        if not hasRevived then
+            hasRevived = true
+            pcall(function()
+                ReplicatedStorage.Events.Player.ChangePlayerMode:FireServer(true)
+            end)
+            task.delay(10, function() hasRevived = false end)
+        end
+    elseif featureStates.SelfReviveMethod == "Revive" then
+        if hrp then lastSavedPosition = hrp.Position end
+        task.spawn(function()
+            task.wait(3)
+            local startTime = tick()
+            repeat
+                pcall(function()
+                    ReplicatedStorage.Events.Player.ChangePlayerMode:FireServer(true)
+                end)
+                task.wait(1)
+            until not char:GetAttribute("Downed") or (tick() - startTime > 1)
+
+            local newChar
+            repeat
+                newChar = LocalPlayer.Character
+                task.wait()
+            until newChar and newChar:FindFirstChild("HumanoidRootPart")
+
+            local newHRP = newChar:FindFirstChild("HumanoidRootPart")
+            if lastSavedPosition and newHRP then
+                newHRP.CFrame = CFrame.new(lastSavedPosition)
+                task.wait(0.5)
+                if (newHRP.Position - lastSavedPosition).Magnitude > 1 then
+                    lastSavedPosition = nil
+                end
+            end
+        end)
+    end    
+end
+
+local function setupAutoRevive(char)
+    if AutoSelfReviveConnection then AutoSelfReviveConnection:Disconnect() end
+    AutoSelfReviveConnection = char:GetAttributeChangedSignal("Downed"):Connect(function()
+        if char:GetAttribute("Downed") then doRevive(char) end
+    end)
+end
+
+if respawnConnection then respawnConnection:Disconnect() end
+respawnConnection = LocalPlayer.CharacterAdded:Connect(function(newChar)
+    task.wait(1)
+    if featureStates.AutoSelfRevive then setupAutoRevive(newChar) end
+end)
+
+if LocalPlayer.Character and featureStates.AutoSelfRevive then
+    setupAutoRevive(LocalPlayer.Character)
+end
+
+-- ============================================
+-- Interactions (Auto Carry & Auto Revive)
+-- ============================================
+local INTERACT_REMOTE = ReplicatedStorage:WaitForChild("Events"):WaitForChild("Character"):WaitForChild("Interact")
+
+getgenv().AutoCarryEnabled = false
+getgenv().AutoReviveEnabled = false
+getgenv().AutoCarryDelay = 1
+getgenv().AutoReviveDelay = 1
+getgenv().AutoCarryPosition = UDim2.new(0.5, -110, 0, 50)
+getgenv().AutoRevivePosition = UDim2.new(0.5, -110, 0, 120)
+
+local lastCarryTime = 0
+local lastReviveTime = 0
+
+local function CreateFloatingButton(name, enabledFlag, savedPosFlag, defaultPosY)
+    if PlayerGui:FindFirstChild(name.."GUI") then
+        PlayerGui[name.."GUI"]:Destroy()
+    end
+
+    local screenGui = Instance.new("ScreenGui")
+    screenGui.Name = name.."GUI"
+    screenGui.ResetOnSpawn = false
+    screenGui.Parent = PlayerGui
+
+    local Container = Instance.new("Frame")
+    Container.Size = UDim2.new(0, 220, 0, 44)
+    Container.Position = getgenv()[savedPosFlag] or UDim2.new(0.5, -110, 0, defaultPosY)
+    Container.AnchorPoint = Vector2.new(0.5,0)
+    Container.BackgroundTransparency = 1
+    Container.Parent = screenGui
+
+    local Button = Instance.new("TextButton")
+    Button.Size = UDim2.new(1,0,1,0)
+    Button.BackgroundColor3 = Color3.fromRGB(0,0,0)
+    Button.BackgroundTransparency = 0.25
+    Button.Text = name.." [OFF]"
+    Button.Font = Enum.Font.Gotham
+    Button.TextSize = 20
+    Button.TextColor3 = Color3.fromRGB(255,255,255)
+    Button.AutoButtonColor = false
+    Button.Parent = Container
+
+    local UICorner = Instance.new("UICorner", Button)
+    UICorner.CornerRadius = UDim.new(1,0)
+    local UIStroke = Instance.new("UIStroke", Button)
+    UIStroke.Thickness = 2
+    local UIGradient = Instance.new("UIGradient", UIStroke)
+    UIGradient.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, Color3.fromHex("40c9ff")),
+        ColorSequenceKeypoint.new(1, Color3.fromHex("e81cff"))
+    })
+    UIGradient.Rotation = 45
+
+    Button.MouseEnter:Connect(function()
+        TweenService:Create(Button, TweenInfo.new(0.1), {BackgroundTransparency = 0.1}):Play()
+    end)
+    Button.MouseLeave:Connect(function()
+        TweenService:Create(Button, TweenInfo.new(0.1), {BackgroundTransparency = 0.25}):Play()
+    end)
+
+    Button.MouseButton1Click:Connect(function()
+        getgenv()[enabledFlag] = not getgenv()[enabledFlag]
+        Button.Text = name.." ["..(getgenv()[enabledFlag] and "ON" or "OFF").."]"
+    end)
+
+    -- Drag
+    local dragging, dragInput, dragStart, startPos = false, nil, Vector2.new(), Container.Position
+    local function update(input)
+        local delta = input.Position - dragStart
+        Container.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+    end
+
+    Button.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            dragInput = input
+            dragStart = input.Position
+            startPos = Container.Position
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    dragging = false
+                    getgenv()[savedPosFlag] = Container.Position
+                end
+            end)
+        end
+    end)
+
+    Button.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+            dragInput = input
+        end
+    end)
+
+    UserInputService.InputChanged:Connect(function(input)
+        if dragging and input == dragInput then
+            update(input)
+        end
+    end)
+
+    screenGui.Enabled = false
+    return screenGui
+end
+
+local AutoCarryGUI = CreateFloatingButton("AutoCarry", "AutoCarryEnabled", "AutoCarryPosition", 50)
+local AutoReviveGUI = CreateFloatingButton("AutoRevive", "AutoReviveEnabled", "AutoRevivePosition", 120)
+
+RunService.RenderStepped:Connect(function()
+    if getgenv().AutoCarryEnabled then
+        local myHRP = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+        if myHRP then
+            for _, player in ipairs(Players:GetPlayers()) do
+                if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") and player.Character:FindFirstChild("Humanoid") then
+                    local targetHRP = player.Character.HumanoidRootPart
+                    local targetHumanoid = player.Character.Humanoid
+                    if (myHRP.Position - targetHRP.Position).Magnitude <= 10 and targetHumanoid.Health <= 0 then
+                        if tick() - (getgenv().AutoCarryLast or 0) >= getgenv().AutoCarryDelay then
+                            INTERACT_REMOTE:FireServer("Carry", nil, player.Name)
+                            getgenv().AutoCarryLast = tick()
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+    if getgenv().AutoReviveEnabled then
+        local myHRP = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+        if myHRP then
+            for _, player in ipairs(Players:GetPlayers()) do
+                if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") and player.Character:FindFirstChild("Humanoid") then
+                    local targetHRP = player.Character.HumanoidRootPart
+                    local targetHumanoid = player.Character.Humanoid
+                    if (myHRP.Position - targetHRP.Position).Magnitude <= 10 and targetHumanoid.Health <= 0 then
+                        if tick() - (getgenv().AutoReviveLast or 0) >= getgenv().AutoReviveDelay then
+                            INTERACT_REMOTE:FireServer("Revive", true, player.Name)
+                            getgenv().AutoReviveLast = tick()
+                        end
+                    end
+                end
+            end
+        end
+    end
+end)
+
+print("✅ M.lua - Interactions & Revive loaded!")
 -- ============================================
 -- Auto Jump System v2 - WindUI Version
 -- ============================================
