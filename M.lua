@@ -1753,7 +1753,7 @@ end
     -- ============================================
     -- إنشاء الـ Section في تبويب Misc
     -- ============================================
-    local AutoJumpSection = MainTab:Section({
+    local AutoJumpSection = Tabs.Main:Section({
         Title = "Auto Jump",
         Side = "Left",
         Collapsed = false,
