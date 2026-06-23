@@ -266,8 +266,6 @@ MainTab:Dropdown({
     end,
 })
 
-MainTab:Space()
-
 local Section = MainTab:Section({ 
     Title = "Emote modifications",
 })
@@ -353,8 +351,6 @@ MainTab:Button({
     end
 })
 
-MainTab:Space()
-
 local Section = MainTab:Section({ 
     Title = "Moviment modifications",
 })
@@ -368,123 +364,6 @@ local Debris = game:GetService("Debris")
 local Player = Players.LocalPlayer
 local PlayerGui = Player:WaitForChild("PlayerGui")
 local camera = workspace.CurrentCamera
-
--- =======================
--- AutoJump
--- =======================
-getgenv().AutoJumpEnabled = false
-getgenv().AutoJumpMode = "Acceleration"
-getgenv().AutoJumpAccel = -0.1
-local lastJump = 0
-
-local function applyFriction() 
-    -- opcional, sem getgc
-end
-
-local function createAutoJumpGUI()
-    -- Remove antiga
-    if PlayerGui:FindFirstChild("AutoJumpGUI") then
-        PlayerGui.AutoJumpGUI:Destroy()
-    end
-
-    local screenGui = Instance.new("ScreenGui")
-    screenGui.Name = "AutoJumpGUI"
-    screenGui.ResetOnSpawn = false
-    screenGui.Parent = PlayerGui
-
-    local Container = Instance.new("Frame")
-    Container.Size = UDim2.new(0, 220, 0, 44)
-    Container.Position = getgenv().AutoJumpPosition or UDim2.new(0.5, -110, 0, 60)
-    Container.AnchorPoint = Vector2.new(0.5, 0)
-    Container.BackgroundTransparency = 1
-    Container.Parent = screenGui
-
-    local Button = Instance.new("TextButton")
-    Button.Size = UDim2.new(1, 0, 1, 0)
-    Button.BackgroundColor3 = Color3.fromRGB(0,0,0)
-    Button.BackgroundTransparency = 0.25
-    Button.Text = "AutoJump [OFF]"
-    Button.Font = Enum.Font.Gotham
-    Button.TextSize = 20
-    Button.TextColor3 = Color3.fromRGB(255,255,255)
-    Button.AutoButtonColor = false
-    Button.Parent = Container
-
-    local UICorner = Instance.new("UICorner", Button)
-    UICorner.CornerRadius = UDim.new(1,0)
-    local UIStroke = Instance.new("UIStroke", Button)
-    UIStroke.Thickness = 2
-    local UIGradient = Instance.new("UIGradient", UIStroke)
-    UIGradient.Color = ColorSequence.new({ColorSequenceKeypoint.new(0, Color3.fromHex("40c9ff")), ColorSequenceKeypoint.new(1, Color3.fromHex("e81cff"))})
-    UIGradient.Rotation = 45
-
-    Button.MouseEnter:Connect(function()
-        TweenService:Create(Button, TweenInfo.new(0.1), {BackgroundTransparency = 0.1}):Play()
-    end)
-    Button.MouseLeave:Connect(function()
-        TweenService:Create(Button, TweenInfo.new(0.1), {BackgroundTransparency = 0.25}):Play()
-    end)
-
-    Button.MouseButton1Click:Connect(function()
-        getgenv().AutoJumpEnabled = not getgenv().AutoJumpEnabled
-        Button.Text = "AutoJump ["..(getgenv().AutoJumpEnabled and "ON" or "OFF").."]"
-    end)
-
-    -- Drag
-    local dragging, dragInput, dragStart, startPos = false, nil, Vector2.new(), Container.Position
-    local function update(input)
-        local delta = input.Position - dragStart
-        Container.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-    end
-
-    Button.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            dragging = true
-            dragInput = input
-            dragStart = input.Position
-            startPos = Container.Position
-            input.Changed:Connect(function()
-                if input.UserInputState == Enum.UserInputState.End then
-                    dragging = false
-                    getgenv().AutoJumpPosition = Container.Position
-                end
-            end)
-        end
-    end)
-
-    Button.InputChanged:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-            dragInput = input
-        end
-    end)
-
-    UserInputService.InputChanged:Connect(function(input)
-        if dragging and input == dragInput then
-            update(input)
-        end
-    end)
-
-    screenGui.Enabled = false
-    return screenGui
-end
-
-local autoJumpGUI = createAutoJumpGUI()
-
-RunService.RenderStepped:Connect(function()
-    if not getgenv().AutoJumpEnabled then return end
-    local char = Player.Character
-    if char and char:FindFirstChild("Humanoid") then
-        local humanoid = char.Humanoid
-        local now = tick()
-        if now - lastJump >= 0.15 then
-            lastJump = now
-            if humanoid:GetState() ~= Enum.HumanoidStateType.Jumping and humanoid:GetState() ~= Enum.HumanoidStateType.Freefall then
-                humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
-            end
-        end
-        applyFriction()
-    end
-end)
 
 -- =======================
 -- AutoTrimp
@@ -775,48 +654,6 @@ local function createLagSwitchGUI()
 end
 
 
--- =======================
--- MainTab Toggles e Inputs finais
--- =======================
--- AutoJump Mode Dropdown
-MainTab:Dropdown({
-    Title = "AutoJump Mode",
-    Values = {"Acceleration", "No Acceleration"},
-    Multi = false,
-    Default = 1,
-    Callback = function(value)
-        if value ~= "" then
-            getgenv().AutoJumpMode = value
-        end
-    end
-})
-
--- AutoJump GUI Toggle
-MainTab:Toggle({
-    Title = "AutoJump ",
-    Value = false,
-    Callback = function(state)
-        autoJumpGUI.Enabled = state
-        if not state then
-            getgenv().AutoJumpEnabled = false
-        end
-    end
-})
-
-
--- AutoJump Acceleration Input
-MainTab:Input({
-    Title = "AutoJump Acceleration (Negative Only)",
-    Placeholder = "-0.5",
-    Numeric = true,
-    Callback = function(value)
-        if tostring(value):sub(1,1) == "-" then
-            getgenv().AutoJumpAccel = tonumber(value)
-        end
-    end
-})
-
-MainTab:Space()
 -- Serviços
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -1507,5 +1344,542 @@ MainTab:Input({
         end
     end
 })
+-- ============================================
+-- Auto Jump System v2 - WindUI Version
+-- ============================================
+pcall(function()
+    local Players = game:GetService("Players")
+    local RunService = game:GetService("RunService")
+    local UserInputService = game:GetService("UserInputService")
+    local LP = Players.LocalPlayer
+    
+    -- ============================================
+    -- المتغيرات الرئيسية
+    -- ============================================
+    local autoJumpEnabled = false
+    local autoJumpType = "Bounce"  -- Bounce / Realistic
+    local bhopMode = "Acceleration"  -- Acceleration / No Acceleration
+    local bhopAccelValue = -0.5
+    local bhopHoldEnabled = false
+    local bhopHoldActive = false
+    local rotationEnabled = false
+    local rotationSpeed = 100000
+    local jumpCooldown = 0.25
+    local jumpPower = 50
+    
+    -- متغيرات التشغيل
+    local bhopConnection = nil
+    local rotationConnection = nil
+    local bhopLoaded = false
+    local frictionTables = {}
+    
+    -- مراجع الشخصية
+    local Character = nil
+    local Humanoid = nil
+    local HumanoidRootPart = nil
+    local LastJump = 0
+    
+    -- اتصالات الموبايل
+    local mobileJumpConnections = { down = nil, up = nil }
+    local floatingButtonGui = nil
+    
+    -- ============================================
+    -- الدوال الأساسية
+    -- ============================================
+    
+    -- تحديث مراجع الشخصية
+    local function UpdateCharacterReferences()
+        pcall(function()
+            if LP and LP.Character then
+                Character = LP.Character
+                Humanoid = Character:FindFirstChildOfClass("Humanoid")
+                HumanoidRootPart = Character:FindFirstChild("HumanoidRootPart")
+            end
+        end)
+    end
+    
+    -- فحص是否存在 على الأرض
+    local function IsOnGround()
+        if not (Character and Humanoid and HumanoidRootPart) then return false end
+        
+        local success, result = pcall(function()
+            local state = Humanoid:GetState()
+            if state == Enum.HumanoidStateType.Jumping or state == Enum.HumanoidStateType.Freefall then
+                return false
+            end
+            
+            local rayParams = RaycastParams.new()
+            rayParams.FilterType = Enum.RaycastFilterType.Blacklist
+            rayParams.FilterDescendantsInstances = {Character}
+            return workspace:Raycast(HumanoidRootPart.Position, Vector3.new(0, -4, 0), rayParams) ~= nil
+        end)
+        
+        return success and result or false
+    end
+    
+    -- البحث عن جداول الاحتكاك
+    local function FindFrictionTables()
+        pcall(function()
+            frictionTables = {}
+            local success, gc = pcall(function() return getgc(true) end)
+            if not success then return end
+            
+            for _, obj in pairs(gc) do
+                if type(obj) == "table" and rawget(obj, "Friction") then
+                    table.insert(frictionTables, { obj = obj, original = obj.Friction })
+                end
+            end
+        end)
+    end
+    
+    -- تطبيق الاحتكاك
+    local function ApplyBhopFriction()
+        pcall(function()
+            local isActive = autoJumpEnabled or (bhopHoldEnabled and bhopHoldActive)
+            
+            if isActive and bhopMode == "Acceleration" then
+                if #frictionTables == 0 then FindFrictionTables() end
+                for _, t in ipairs(frictionTables) do
+                    if t.obj then
+                        pcall(function() t.obj.Friction = bhopAccelValue end)
+                    end
+                end
+            else
+                for _, t in ipairs(frictionTables) do
+                    if t.obj and t.original then
+                        pcall(function() t.obj.Friction = t.original end)
+                    end
+                end
+            end
+        end)
+    end
+    
+    -- تحديث القفز
+    local function UpdateBhop()
+        if not bhopLoaded then return end
+        
+        local isActive = autoJumpEnabled or (bhopHoldEnabled and bhopHoldActive)
+        if not isActive then return end
+        
+        if not Character or not Character.Parent then UpdateCharacterReferences() end
+        if not (Humanoid and HumanoidRootPart) then return end
+        
+        local now = tick()
+        
+        if autoJumpType == "Realistic" then
+            -- Realistic Mode (استخدام أحداث اللعبة)
+            pcall(function()
+                local ps = LP:FindFirstChild("PlayerScripts")
+                if ps then
+                    local ev = ps:FindFirstChild("Events")
+                    if ev then
+                        local temp = ev:FindFirstChild("temporary_events")
+                        if temp then
+                            if temp:FindFirstChild("JumpReact") then temp.JumpReact:Fire() end
+                            if temp:FindFirstChild("EndJump") then temp.EndJump:Fire() end
+                        end
+                    end
+                end
+            end)
+        else
+            -- Bounce Mode
+            if IsOnGround() and (now - LastJump) > jumpCooldown then
+                pcall(function()
+                    Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+                    Humanoid.JumpPower = jumpPower
+                end)
+                LastJump = now
+            end
+        end
+    end
+    
+    -- تشغيل/إيقاف Bhop
+    local function StartBhop()
+        if bhopConnection then return end
+        bhopLoaded = true
+        FindFrictionTables()
+        ApplyBhopFriction()
+        bhopConnection = RunService.Heartbeat:Connect(UpdateBhop)
+    end
+    
+    local function StopBhop()
+        if bhopConnection then
+            bhopConnection:Disconnect()
+            bhopConnection = nil
+        end
+        bhopLoaded = false
+        bhopHoldActive = false
+        ApplyBhopFriction()
+    end
+    
+    -- Rotation 360
+    local function StartRotation()
+        if rotationConnection then rotationConnection:Disconnect() end
+        rotationConnection = RunService.Heartbeat:Connect(function(dt)
+            if not rotationEnabled or not autoJumpEnabled then return end
+            pcall(function()
+                local hrp = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
+                if hrp then
+                    local rot = hrp.Orientation
+                    hrp.Orientation = Vector3.new(rot.X, rot.Y + (rotationSpeed * dt), rot.Z)
+                end
+            end)
+        end)
+    end
+    
+    local function StopRotation()
+        if rotationConnection then
+            rotationConnection:Disconnect()
+            rotationConnection = nil
+        end
+    end
+    
+    local function UpdateRotationState()
+        if rotationEnabled and autoJumpEnabled then
+            StartRotation()
+        else
+            StopRotation()
+        end
+    end
+    
+    -- تنظيف اتصالات الموبايل
+    local function CleanupMobileConnections()
+        pcall(function()
+            if mobileJumpConnections.down then
+                mobileJumpConnections.down:Disconnect()
+                mobileJumpConnections.down = nil
+            end
+            if mobileJumpConnections.up then
+                mobileJumpConnections.up:Disconnect()
+                mobileJumpConnections.up = nil
+            end
+        end)
+    end
+    
+    -- إعدادات زر النط في الموبايل
+    local function SetupMobileJumpButton()
+        pcall(function()
+            if not LP then return end
+            
+            CleanupMobileConnections()
+            
+            local playerGui = LP:FindFirstChild("PlayerGui")
+            if not playerGui then return end
+            
+            local touchGui = playerGui:FindFirstChild("TouchGui")
+            if not touchGui then return end
+            
+            local touchControlFrame = touchGui:FindFirstChild("TouchControlFrame")
+            if not touchControlFrame then return end
+            
+            local jumpButton = touchControlFrame:FindFirstChild("JumpButton")
+            if not jumpButton then return end
+            
+            mobileJumpConnections.down = jumpButton.MouseButton1Down:Connect(function()
+                if bhopHoldEnabled then
+                    bhopHoldActive = true
+                    if not autoJumpEnabled then StartBhop() end
+                end
+            end)
+            
+            mobileJumpConnections.up = jumpButton.MouseButton1Up:Connect(function()
+                if bhopHoldEnabled then
+                    bhopHoldActive = false
+                    if not autoJumpEnabled then StopBhop() end
+                end
+            end)
+        end)
+    end
+    
+-- ============================================
+-- Floating Button (Blood Moon Style)
+-- ============================================
+local function CreateBhopFloatingButton()
+    local CoreGui = game:GetService("CoreGui")
+    
+    local oldGui = CoreGui:FindFirstChild("BhopFloatingButton")
+    if oldGui then oldGui:Destroy() end
+    
+    local screenGui = Instance.new("ScreenGui")
+    screenGui.Name = "BhopFloatingButton"
+    screenGui.ResetOnSpawn = false
+    screenGui.Parent = CoreGui
+    
+    local button = Instance.new("TextButton")
+    button.Size = UDim2.new(0, 160, 0, 55)
+    local startX = (workspace.CurrentCamera.ViewportSize.X / 2) - 80
+    local startY = (workspace.CurrentCamera.ViewportSize.Y / 2) - 27
+    button.Position = UDim2.new(0, startX, 0, startY)
+    button.Text = "BHOP: OFF"
+    
+    -- 🩸 Blood Moon Colors
+    button.BackgroundColor3 = Color3.fromHex("#1a0000")      -- خلفية حمراء داكنة
+    button.TextColor3 = Color3.fromHex("#ffcccc")            -- نص أحمر فاتح
+    button.Font = Enum.Font.GothamBold
+    button.TextSize = 14
+    button.AutoButtonColor = false
+    button.Parent = screenGui
+    
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0.2, 0)
+    corner.Parent = button
+    
+    local stroke = Instance.new("UIStroke")
+    stroke.Color = Color3.fromHex("#660000")                 -- إطار أحمر داكن
+    stroke.Thickness = 2
+    stroke.Parent = button
+    
+    -- نظام السحب
+    local dragging = false
+    local dragStart, startPos
+    
+    button.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = true
+            dragStart = input.Position
+            startPos = button.Position
+            stroke.Color = Color3.fromHex("#ff4444")          -- أحمر ناري عند السحب
+            button.Text = "DRAG..."
+        end
+    end)
+    
+    button.InputChanged:Connect(function(input)
+        if dragging and (input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseMovement) then
+            local delta = input.Position - dragStart
+            button.Position = UDim2.new(0, startPos.X.Offset + delta.X, 0, startPos.Y.Offset + delta.Y)
+        end
+    end)
+    
+    button.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = false
+            stroke.Color = autoJumpEnabled and Color3.fromHex("#ff4444") or Color3.fromHex("#660000")
+            button.Text = autoJumpEnabled and "BHOP: ON" or "BHOP: OFF"
+        end
+    end)
+    
+    -- الضغط على الزر
+    local function handleTap()
+        if not dragging then
+            button.Text = "BHOP: ACTIVE"
+            button.BackgroundColor3 = Color3.fromHex("#3d0000")      -- أحمر متوسط عند التفعيل
+            stroke.Color = Color3.fromHex("#ff4444")
+            
+            autoJumpEnabled = not autoJumpEnabled
+            
+            if autoJumpEnabled then
+                StartBhop()
+                SetupMobileJumpButton()
+                UpdateRotationState()
+            else
+                StopBhop()
+                StopRotation()
+                bhopHoldActive = false
+            end
+            
+            button.Text = autoJumpEnabled and "BHOP: ON" or "BHOP: OFF"
+            button.BackgroundColor3 = autoJumpEnabled and Color3.fromHex("#3d0000") or Color3.fromHex("#1a0000")
+            stroke.Color = autoJumpEnabled and Color3.fromHex("#ff4444") or Color3.fromHex("#660000")
+            
+            -- تحديث Toggle في الواجهة
+            pcall(function()
+                if BunnyHopToggle then BunnyHopToggle:SetValue(autoJumpEnabled) end
+            end)
+        end
+    end
+    
+    button.MouseButton1Click:Connect(handleTap)
+    button.TouchTap:Connect(handleTap)
+    
+    return screenGui
+end
 
-MainTab:Space()
+-- تحديث نص الزر العائم (Blood Moon)
+local function UpdateFloatingButtonText()
+    pcall(function()
+        if floatingButtonGui then
+            local btn = floatingButtonGui:FindFirstChildOfClass("TextButton")
+            if btn then
+                btn.Text = autoJumpEnabled and "BHOP: ON" or "BHOP: OFF"
+                btn.BackgroundColor3 = autoJumpEnabled and Color3.fromHex("#3d0000") or Color3.fromHex("#1a0000")
+            end
+        end
+    end)
+end
+    
+    -- ============================================
+    -- PC Space Bar (يدعم الضغط المستمر)
+    -- ============================================
+    UserInputService.InputBegan:Connect(function(input, gameProcessed)
+        if gameProcessed then return end
+        if input.KeyCode == Enum.KeyCode.Space then
+            if bhopHoldEnabled then
+                bhopHoldActive = true
+                if not autoJumpEnabled then StartBhop() end
+            end
+        end
+    end)
+    
+    UserInputService.InputEnded:Connect(function(input)
+        if input.KeyCode == Enum.KeyCode.Space then
+            if bhopHoldEnabled then
+                bhopHoldActive = false
+                if not autoJumpEnabled then StopBhop() end
+            end
+        end
+    end)
+    
+    -- ============================================
+    -- معالج إعادة الظهور
+    -- ============================================
+    local function OnCharacterAdded(char)
+        task.wait(0.6)
+        Character = char
+        if char then
+            pcall(function()
+                Humanoid = char:WaitForChild("Humanoid", 3)
+                HumanoidRootPart = char:WaitForChild("HumanoidRootPart", 3)
+            end)
+        end
+        if autoJumpEnabled then
+            ApplyBhopFriction()
+            UpdateRotationState()
+        end
+    end
+    
+    LP.CharacterAdded:Connect(OnCharacterAdded)
+    if LP.Character then OnCharacterAdded(LP.Character) end
+    
+    -- ============================================
+    -- إنشاء الـ Section في تبويب Misc
+    -- ============================================
+    local AutoJumpSection = MainTab:Section({
+        Title = "Auto Jump",
+        Side = "Left",
+        Collapsed = false,
+    })
+    
+    -- Auto Jump Type
+    AutoJumpSection:Dropdown({
+        Title = "Auto Jump Type",
+        Values = { "Bounce", "Realistic" },
+        Default = "Bounce",
+        Callback = function(value)
+            autoJumpType = value
+        end
+    })
+    
+    -- Rotation 360
+    AutoJumpSection:Toggle({
+        Title = "Rotation 360",
+        Value = false,
+        Callback = function(state)
+            rotationEnabled = state
+            UpdateRotationState()
+            WindUI:Notify({ Title = "Rotation", Content = state and "Enabled" or "Disabled", Duration = 2 })
+        end
+    })
+    
+    -- Bunny Hop
+    local BunnyHopToggle = AutoJumpSection:Toggle({
+        Title = "Bunny Hop",
+        Value = false,
+        Callback = function(state)
+            autoJumpEnabled = state
+            if state then
+                StartBhop()
+                SetupMobileJumpButton()
+                UpdateRotationState()
+                WindUI:Notify({ Title = "Bunny Hop", Content = "Enabled", Duration = 2 })
+            else
+                StopBhop()
+                StopRotation()
+                bhopHoldActive = false
+                WindUI:Notify({ Title = "Bunny Hop", Content = "Disabled", Duration = 2 })
+            end
+            UpdateFloatingButtonText()
+        end
+    })
+    
+    -- Bhop Hold (مستقل)
+    AutoJumpSection:Toggle({
+        Title = "Bhop Hold (Hold Space/Jump)",
+        Value = false,
+        Callback = function(state)
+            bhopHoldEnabled = state
+            if state then
+                SetupMobileJumpButton()
+                WindUI:Notify({ Title = "Bhop Hold", Content = "Enabled - Hold jump button", Duration = 2 })
+            else
+                bhopHoldActive = false
+                CleanupMobileConnections()
+                if not autoJumpEnabled then
+                    StopBhop()
+                end
+                WindUI:Notify({ Title = "Bhop Hold", Content = "Disabled", Duration = 2 })
+            end
+            UpdateFloatingButtonText()
+        end
+    })
+    
+    -- Jump Power
+    AutoJumpSection:Slider({
+        Title = "Jump Power",
+        Value = { Min = 30, Max = 150, Default = 50 },
+        Callback = function(value)
+            jumpPower = value
+        end
+    })
+    
+    -- Bhop Mode
+    AutoJumpSection:Dropdown({
+        Title = "Bhop Mode",
+        Values = { "Acceleration", "No Acceleration" },
+        Default = "Acceleration",
+        Callback = function(value)
+            bhopMode = value
+            if autoJumpEnabled or bhopHoldEnabled then ApplyBhopFriction() end
+        end
+    })
+    
+    -- Bhop Acceleration
+    AutoJumpSection:Slider({
+        Title = "Bhop Acceleration",
+        Value = { Min = -10, Max = -0.1, Default = -0.5 },
+        Step = 0.1,
+        Callback = function(value)
+            bhopAccelValue = value
+            if (autoJumpEnabled or bhopHoldEnabled) and bhopMode == "Acceleration" then
+                ApplyBhopFriction()
+            end
+        end
+    })
+    
+    -- Jump Cooldown
+    AutoJumpSection:Slider({
+        Title = "Jump Cooldown (Seconds)",
+        Value = { Min = 0.05, Max = 0.5, Default = 0.25 },
+        Step = 0.01,
+        Callback = function(value)
+            jumpCooldown = value
+        end
+    })
+    
+    -- Floating Button GUI
+    AutoJumpSection:Toggle({
+        Title = "Bhop Button GUI",
+        Value = false,
+        Callback = function(state)
+            if state then
+                floatingButtonGui = CreateBhopFloatingButton()
+            else
+                if floatingButtonGui then
+                    pcall(function() floatingButtonGui:Destroy() end)
+                    floatingButtonGui = nil
+                end
+            end
+        end
+    })
+    
+    print("[Auto Jump] Loaded successfully in Misc tab!")
+end)
