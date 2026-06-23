@@ -17,7 +17,7 @@ local Tabs = {
 }
 
 if not Tabs.Misc then
-    Tabs.Misc = Window:Tab({ Title = "Misc", Icon = "shapes", Locked = false })
+    Tabs.Misc = Window:Tab({ Title = "Misc", Icon = "solar:box-minimalistic-outline", Locked = false })
 end
 
 -- ============================================
