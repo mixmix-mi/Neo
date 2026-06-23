@@ -36,7 +36,9 @@ local Window = WindUI:CreateWindow({
         Height = 44,
         ButtonsType = "Mac",
     },
-    Window:EditOpenButton({
+})
+
+Window:EditOpenButton({
     Title = "Neo Hyper",
     Icon = "app-window",
     CornerRadius = UDim.new(0,16),
@@ -45,8 +47,6 @@ local Window = WindUI:CreateWindow({
     Enabled = true,
     Draggable = true,
 })
-
-
 -- ============================================
 -- GitHub Module Links Configuration (Ordered)
 -- ============================================
