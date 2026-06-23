@@ -2,7 +2,7 @@ local Tabs = {}
 
 Tabs.Main = Window:Tab({
     Title = "Main",
-    Icon = "flame",
+    Icon = "solar:box-minimalistic-outline",
     Locked = false,
 })
 
@@ -667,120 +667,129 @@ getgenv().GravityEnabled = false
 getgenv().GravityValue = workspace.Gravity -- pega gravidade atual do jogo
 getgenv().GravityPosition = UDim2.new(0.5, -110, 0, 50)
 getgenv().GravityButtonConnection = nil
-
--- Função para criar GUI flutuante estilo AutoTrimp
+-- Função para criar GUI flutuante estilo preto (مثل Bhop)
 local function CreateGravityGUI()
+    local CoreGui = game:GetService("CoreGui")
+    
     -- Remove GUI antiga
-    if PlayerGui:FindFirstChild("GravityGUI") then
-        PlayerGui.GravityGUI:Destroy()
-    end
+    local oldGui = CoreGui:FindFirstChild("GravityGUI")
+    if oldGui then oldGui:Destroy() end
 
     local screenGui = Instance.new("ScreenGui")
     screenGui.Name = "GravityGUI"
     screenGui.ResetOnSpawn = false
-    screenGui.Parent = PlayerGui
-
-    local Container = Instance.new("Frame")
-    Container.Size = UDim2.new(0, 220, 0, 44)
-    Container.Position = getgenv().GravityPosition
-    Container.AnchorPoint = Vector2.new(0.5,0)
-    Container.BackgroundTransparency = 1
-    Container.Parent = screenGui
-
-    local Button = Instance.new("TextButton")
-    Button.Size = UDim2.new(1,0,1,0)
-    Button.BackgroundColor3 = Color3.fromRGB(0,0,0)
-    Button.BackgroundTransparency = 0.25
-    Button.Text = "Gravity [OFF]"
-    Button.Font = Enum.Font.Gotham
-    Button.TextSize = 20
-    Button.TextColor3 = Color3.fromRGB(255,255,255)
-    Button.AutoButtonColor = false
-    Button.Parent = Container
-
-    local UICorner = Instance.new("UICorner", Button)
-    UICorner.CornerRadius = UDim.new(1,0)
-    local UIStroke = Instance.new("UIStroke", Button)
-    UIStroke.Thickness = 2
-    local UIGradient = Instance.new("UIGradient", UIStroke)
-    UIGradient.Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0, Color3.fromHex("40c9ff")),
-        ColorSequenceKeypoint.new(1, Color3.fromHex("e81cff"))
-    })
-    UIGradient.Rotation = 45
-
-    -- Hover Tween
-    Button.MouseEnter:Connect(function()
-        TweenService:Create(Button, TweenInfo.new(0.1), {BackgroundTransparency = 0.1}):Play()
+    screenGui.Parent = CoreGui
+    
+    local button = Instance.new("TextButton")
+    button.Size = UDim2.new(0, 160, 0, 55)
+    local startX = (workspace.CurrentCamera.ViewportSize.X / 2) - 80
+    local startY = (workspace.CurrentCamera.ViewportSize.Y / 2) - 27
+    button.Position = UDim2.new(0, startX, 0, startY)
+    button.Text = "GRAVITY: OFF"
+    
+    -- 🖤 ألوان سوداء
+    button.BackgroundColor3 = Color3.fromRGB(30, 30, 30)      -- خلفية رمادية داكنة
+    button.TextColor3 = Color3.fromRGB(255, 255, 255)         -- نص أبيض
+    button.Font = Enum.Font.GothamBold
+    button.TextSize = 14
+    button.AutoButtonColor = false
+    button.Parent = screenGui
+    
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0.2, 0)
+    corner.Parent = button
+    
+    local stroke = Instance.new("UIStroke")
+    stroke.Color = Color3.fromRGB(60, 60, 60)                 -- إطار رمادي
+    stroke.Thickness = 2
+    stroke.Parent = button
+    
+    -- نظام السحب
+    local dragging = false
+    local dragStart, startPos
+    
+    button.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = true
+            dragStart = input.Position
+            startPos = button.Position
+            stroke.Color = Color3.fromRGB(150, 150, 150)       -- إطار أفتح عند السحب
+            button.Text = "DRAG..."
+        end
     end)
-    Button.MouseLeave:Connect(function()
-        TweenService:Create(Button, TweenInfo.new(0.1), {BackgroundTransparency = 0.25}):Play()
+    
+    button.InputChanged:Connect(function(input)
+        if dragging and (input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseMovement) then
+            local delta = input.Position - dragStart
+            button.Position = UDim2.new(0, startPos.X.Offset + delta.X, 0, startPos.Y.Offset + delta.Y)
+        end
     end)
-
-    -- Toggle gravidade (conexão única)
-    if getgenv().GravityButtonConnection then
-        getgenv().GravityButtonConnection:Disconnect()
-    end
-
-    getgenv().GravityButtonConnection = Button.MouseButton1Click:Connect(function()
-        getgenv().GravityEnabled = not getgenv().GravityEnabled
-        Button.Text = "Gravity ["..(getgenv().GravityEnabled and "ON" or "OFF").."]"
-
-        if getgenv().GravityEnabled then
-            workspace.Gravity = getgenv().GravityValue
-        else
-            workspace.Gravity = getgenv().GravityValue -- mantém o valor original do workspace
-            -- força pulo curto para resetar física do personagem
-            local char = LocalPlayer.Character
-            if char then
-                local hum = char:FindFirstChildOfClass("Humanoid")
-                if hum then
-                    hum.Jump = true
+    
+    button.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = false
+            stroke.Color = getgenv().GravityEnabled and Color3.fromRGB(150, 150, 150) or Color3.fromRGB(60, 60, 60)
+            button.Text = getgenv().GravityEnabled and "GRAVITY: ON" or "GRAVITY: OFF"
+        end
+    end)
+    
+    -- الضغط على الزر
+    local function handleTap()
+        if not dragging then
+            button.Text = "GRAVITY: ACTIVE"
+            button.BackgroundColor3 = Color3.fromRGB(60, 60, 60)      -- أفتح قليلاً عند التفعيل
+            stroke.Color = Color3.fromRGB(150, 150, 150)
+            
+            getgenv().GravityEnabled = not getgenv().GravityEnabled
+            
+            if getgenv().GravityEnabled then
+                workspace.Gravity = getgenv().GravityValue
+            else
+                workspace.Gravity = getgenv().GravityValue -- mantém o valor original
+                -- força pulo curto para resetar física do personagem
+                local char = LocalPlayer.Character
+                if char then
+                    local hum = char:FindFirstChildOfClass("Humanoid")
+                    if hum then
+                        hum.Jump = true
+                    end
                 end
             end
-        end
-    end)
-
-    -- Drag
-    local dragging, dragInput, dragStart, startPos = false, nil, Vector2.new(), Container.Position
-    local function update(input)
-        local delta = input.Position - dragStart
-        Container.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-    end
-
-    Button.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            dragging = true
-            dragInput = input
-            dragStart = input.Position
-            startPos = Container.Position
-            input.Changed:Connect(function()
-                if input.UserInputState == Enum.UserInputState.End then
-                    dragging = false
-                    getgenv().GravityPosition = Container.Position
-                end
+            
+            button.Text = getgenv().GravityEnabled and "GRAVITY: ON" or "GRAVITY: OFF"
+            button.BackgroundColor3 = getgenv().GravityEnabled and Color3.fromRGB(60, 60, 60) or Color3.fromRGB(30, 30, 30)
+            stroke.Color = getgenv().GravityEnabled and Color3.fromRGB(150, 150, 150) or Color3.fromRGB(60, 60, 60)
+            
+            -- تحديث Toggle في الواجهة (لو موجود)
+            pcall(function()
+                if GravityToggle then GravityToggle:SetValue(getgenv().GravityEnabled) end
             end)
         end
-    end)
-
-    Button.InputChanged:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-            dragInput = input
-        end
-    end)
-
-    UserInputService.InputChanged:Connect(function(input)
-        if dragging and input == dragInput then
-            update(input)
-        end
-    end)
-
-    screenGui.Enabled = false
+    end
+    
+    button.MouseButton1Click:Connect(handleTap)
+    button.TouchTap:Connect(handleTap)
+    
     return screenGui
 end
 
+-- تحديث نص الزر العائم
+local function UpdateGravityButtonText()
+    pcall(function()
+        local coreGui = game:GetService("CoreGui")
+        local gravityGui = coreGui:FindFirstChild("GravityGUI")
+        if gravityGui then
+            local btn = gravityGui:FindFirstChildOfClass("TextButton")
+            if btn then
+                btn.Text = getgenv().GravityEnabled and "GRAVITY: ON" or "GRAVITY: OFF"
+                btn.BackgroundColor3 = getgenv().GravityEnabled and Color3.fromRGB(60, 60, 60) or Color3.fromRGB(30, 30, 30)
+            end
+        end
+    end)
+end
+
 -- Cria GUI
-local GravityGUI = CreateGravityGUI()
+CreateGravityGUI()
 
 -- Toggle no tab principal
 MainTab:Toggle({
@@ -818,8 +827,7 @@ MainTab:Input({
         end
     end
 })
-MainTab:Space()
--- AutoTrimp GUI Toggle
+
 MainTab:Toggle({
     Title = "AutoTrimp",
     Value = false,
@@ -851,8 +859,7 @@ MainTab:Input({
     end
 })
 
-MainTab:Space()
--- LagSwitch GUI Toggle
+
 local lagSwitchGUI -- só declara, sem criar ainda
 MainTab:Toggle({
     Title = "Lag Switch",
@@ -884,7 +891,7 @@ MainTab:Input({
         end
     end
 })
-MainTab:Space()
+
 local infiniteSlideEnabled = false
 local slideFrictionValue = -8
 
@@ -1011,7 +1018,7 @@ MainTab:Toggle({
 	end,
 })
 
-MainTab:Space()
+
 
 -- Detecta CharacterAdded e reinicia se necessário
 LocalPlayer.CharacterAdded:Connect(function()
@@ -1104,14 +1111,13 @@ respawnConnection = player.CharacterAdded:Connect(function(newChar)
 end)    
 
 
-MainTab:Space()
+
 
 local Section = MainTab:Section({ 
     Title = "Yourself",
 })
 
-MainTab:Space()
--- Dropdown SelfReviveMethod
+
 MainTab:Dropdown({
     Title = "Respawn Method",
     Values = {"Spawnpoint", "Revive"},
@@ -1290,13 +1296,11 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 
-MainTab:Space()
 
 local Section = MainTab:Section({ 
     Title = "Interactions",
 })
-MainTab:Space()
--- Toggle para abrir GUI flutuante
+
 MainTab:Toggle({
     Title = "Auto Carry GUI",
     Value = false,
@@ -1319,7 +1323,7 @@ MainTab:Input({
         end
     end
 })
-MainTab:Space()
+
 
 MainTab:Toggle({
     Title = "Auto Revive GUI",
