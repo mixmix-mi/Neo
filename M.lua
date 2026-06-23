@@ -284,7 +284,7 @@ Section:Dropdown({
 
 Section:Space()
 
-local Section = MainTab:Section({ 
+local Section = Tabs.Misc:Section({ 
     Title = "Emote modifications",
 })
 
@@ -345,7 +345,7 @@ featureStates = featureStates or {}
 featureStates.EmoteSpeedValue = 2
 
 -- INPUT DE VELOCIDADE
-local emotespeed = MainTab:Input({
+local emotespeed = Tabs.Misc:Input({
     Title = "Emote Speed Value",
     Description = "Changes the animation speed of your emotes",
     Placeholder = "1500",
@@ -360,7 +360,7 @@ local emotespeed = MainTab:Input({
     end
 })
 
-MainTab:Button({
+Tabs.Misc:Button({
     Title = "Reset Emote Speed",
     Description = "Restore default emote speed",
     Callback = function()
