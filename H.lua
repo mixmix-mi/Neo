@@ -1,40 +1,34 @@
--- ============================================
--- Home Tab - About & Change Logs (مفتوحة تلقائياً)
--- ============================================
 
--- البحث عن تبويب Home أو إنشاؤه
-local HomeTab = nil
-if Tabs and Tabs.Home then
-    HomeTab = Tabs.Home
-elseif Window and Window.Tabs then
-    for _, tab in pairs(Window.Tabs) do
-        if tab and (tab.Title == "Home" or tab.Title == "الرئيسية") then
-            HomeTab = tab
-            break
-        end
-    end
-end
-
-if not HomeTab then
-    HomeTab = Window:Tab({
-        Title = "Home",
-        Icon = "home",
-        Locked = false
-    })
-end
 
 -- اختيار تبويب Home تلقائياً
-HomeTab:Select()
+
+
+
+-- ============================================
+-- تحديث: فتح القسمين تلقائياً
+-- ============================================
+task.wait(0.1)
+pcall(function()
+    AboutSection:Open()
+    ChangeLogsSection:Open()
+end)
+-- ============================================
+-- Home Tab - الطريقة الجديدة
+-- ============================================
+local Main = Window:Tab({
+    Title = "Home",
+    Icon = "solar:magic-stick-linear",
+    Locked = false
+})
 
 -- ============================================
 -- About Section (مفتوحة)
 -- ============================================
-local AboutSection = HomeTab:Section({
+local AboutSection = Main:Section({
     Title = "About",
     Side = "Left",
     Collapsed = false,  -- مفتوحة
-})
-
+})    
 AboutSection:Paragraph({    
     Title = "About Neo Hyper",    
     Desc = "Made By : M4X EVA,  Special thanks: Amal Jana ",
@@ -58,48 +52,6 @@ ChangeLogsSection:Paragraph({
 })
 
 print("✅ About & Change Logs loaded in Home tab!")
-
--- ============================================
--- تحديث: فتح القسمين تلقائياً
--- ============================================
-task.wait(0.1)
-pcall(function()
-    AboutSection:Open()
-    ChangeLogsSection:Open()
-end)
--- ============================================
--- إنشاء تبويب Home (لو مش موجود)
--- ============================================
-local HomeTab = nil
-if Tabs and Tabs.Home then
-    HomeTab = Tabs.Home
-elseif Window and Window.Tabs then
-    for _, tab in pairs(Window.Tabs) do
-        if tab and (tab.Title == "Home" or tab.Title == "الرئيسية") then
-            HomeTab = tab
-            break
-        end
-    end
-end
-
-if not HomeTab then
-    HomeTab = Window:Tab({
-        Title = "Home",
-        Icon = "home",
-        Locked = false
-    })
-end
-
-
-
--- ============================================
--- Home Tab - الطريقة الجديدة
--- ============================================
-local Main = Window:Tab({
-    Title = "Home",
-    Icon = "solar:magic-stick-linear",
-    Locked = false
-})
 
 -- استخدام التاب
 local PlayerAdjustSection = Main:Section({
