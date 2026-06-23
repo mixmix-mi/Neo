@@ -1,12 +1,3 @@
-
--- ============================================
--- تحديث: فتح القسمين تلقائياً
--- ============================================
-task.wait(0.1)
-pcall(function()
-    AboutSection:Open()
-    ChangeLogsSection:Open()
-end)
 -- ============================================
 -- Home Tab - الطريقة الجديدة
 -- ============================================
@@ -32,19 +23,12 @@ AboutSection:Paragraph({
 })
 
 -- ============================================
--- Change Logs Section (مفتوحة)
+-- تحديث: فتح القسمين تلقائياً
 -- ============================================
-local ChangeLogsSection = HomeTab:Section({
-    Title = "Change Logs",
-    Side = "Left",
-    Collapsed = false,  -- مفتوحة
-})
-
-ChangeLogsSection:Paragraph({
-    Title = [[
-    Change Logs Neo Hyper 1.0 ]],
-    TitleSize = 80,
-})
+task.wait(0.1)
+pcall(function()
+    AboutSection:Open(
+end)
 
 print("✅ About & Change Logs loaded in Home tab!")
 
