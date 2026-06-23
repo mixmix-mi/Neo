@@ -17,6 +17,9 @@ local Window = WindUI:CreateWindow({
     Title = "Neo Hyper v1.0",
     Icon = "solar:crown-minimalistic-outline",
     Author = "By M4X EVA",
+    NewElements = true,
+    HideSearchBar = true,
+    Theme = "Dark",
     Folder = "Hyper_V1",
     Size = UDim2.fromOffset(550, 450),
     KeySystem = {                                                   
@@ -33,22 +36,16 @@ local Window = WindUI:CreateWindow({
         Height = 44,
         ButtonsType = "Mac",
     },
-    OpenButton = {
-        Title = "Neo Hyper",
-        CornerRadius = UDim.new(1, 0),
-        StrokeThickness = 3,
-        Enabled = true,
-        Draggable = true,
-        OnlyMobile = false,
-        Scale = 0.75,
-    }
+    Window:EditOpenButton({
+    Title = "Neo Hyper",
+    Icon = "app-window",
+    CornerRadius = UDim.new(0,16),
+    StrokeThickness = 0,
+    Color = ColorSequence.new(Color3.fromRGB(255,0,0), Color3.fromRGB(200,50,0)),
+    Enabled = true,
+    Draggable = true,
 })
 
--- ============================================
--- Config System - المركزي
--- ============================================
-local ConfigManager = Window.ConfigManager
-local mainConfig = ConfigManager:CreateConfig("Neo_Hyper_Settings")
 
 -- ============================================
 -- GitHub Module Links Configuration (Ordered)
@@ -59,7 +56,7 @@ local files = {
     {name = "ESP",      url = "https://raw.githubusercontent.com/mixmix-mi/Neo/refs/heads/main/E.lua"},
     {name = "Misc",     url = "https://raw.githubusercontent.com/mixmix-mi/Neo/refs/heads/main/M.lua"},
     {name = "VIP",      url = "https://raw.githubusercontent.com/mixmix-mi/Neo/refs/heads/main/V.lua"},
-    {name = "Se",       url = "https://raw.githubusercontent.com/mixmix-mi/Neo/refs/heads/main/Sssss.lua"},
+  --  {name = "Se",       url = "https://raw.githubusercontent.com/mixmix-mi/Neo/refs/heads/main/Sssss.lua"},
     {name = "Info",     url = "https://raw.githubusercontent.com/mixmix-mi/Neo/refs/heads/main/I.lua"}
 }
 
@@ -85,10 +82,3 @@ for _, module in ipairs(files) do
     
     task.wait(0.1)
 end
-
-task.spawn(function()
-    task.wait(1)
-    WindUI:SetTheme("Default")
-    task.wait()
-    WindUI:SetTheme("Blood Moon")
-end)
