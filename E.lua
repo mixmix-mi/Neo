@@ -59,7 +59,6 @@ local function IsPlayerDowned(player)
     if hum and hum.Health <= 0 then return true end
     return false
 end
-
 -- ================================
 -- 1. ESP اللاعبين
 -- ================================
@@ -74,8 +73,13 @@ local function CreatePlayerESP(player)
     
     -- إخفاء الاسم الأصلي
     local humanoid = character:FindFirstChildOfClass("Humanoid")
-    if humanoid and humanoid.DisplayDistanceType ~= Enum.HumanoidDisplayDistanceType.None then
-        humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
+    if humanoid then
+        pcall(function()
+            humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
+        end)
+        pcall(function()
+            humanoid.NameDisplayDistance = 0
+        end)
     end
     
     if PlayerESPInstances[player] then
@@ -95,7 +99,7 @@ local function CreatePlayerESP(player)
     label.Size = UDim2.new(1, 0, 1, 0)
     label.BackgroundTransparency = 1
     label.Text = player.Name
-    label.TextColor3 = normalColor
+    label.TextColor3 = normalColor  -- أبيض
     label.TextSize = 14
     label.Font = Enum.Font.GothamBold
     label.TextStrokeTransparency = 0.5
@@ -137,7 +141,7 @@ local function UpdateAllPlayerESP()
             
             if targetPart and label then
                 local isDowned = IsPlayerDowned(player)
-                local color = isDowned and downedColor or normalColor
+                local color = isDowned and downedColor or normalColor  -- أحمر للداون, أبيض للطبيعي
                 
                 local suffix = ""
                 if isDowned then
@@ -182,7 +186,7 @@ local function UpdatePlayerHighlight(player)
     if not character then return end
     
     local isDowned = IsPlayerDowned(player)
-    local color = isDowned and downedColor or normalColor
+    local color = isDowned and downedColor or normalColor  -- أحمر للداون, أبيض للطبيعي
     
     if PlayerHighlights[player] then
         local highlight = PlayerHighlights[player]
@@ -254,16 +258,16 @@ PlayerESPSection:Toggle({
     end,
 })
 
--- لون ESP العادي (Blood Moon)
+-- لون ESP العادي (أبيض)
 PlayerESPSection:Dropdown({
     Title = "Normal Color",
-    Values = { "Blood Red", "Ocean Deep", "White", "Red", "Green", "Blue", "Yellow", "Cyan", "Purple" },
-    Default = "Blood Red",
+    Values = { "White", "Blood Red", "Ocean Deep", "Red", "Green", "Blue", "Yellow", "Cyan", "Purple" },
+    Default = "White",
     Callback = function(value)
         local colors = {
+            White = Color3.fromRGB(255, 255, 255),
             ["Blood Red"] = Color3.fromHex("#ff2222"),
             ["Ocean Deep"] = Color3.fromRGB(0, 68, 170),
-            White = Color3.fromRGB(255, 255, 255),
             Red = Color3.fromRGB(255, 0, 0),
             Green = Color3.fromRGB(0, 255, 0),
             Blue = Color3.fromRGB(0, 0, 255),
@@ -271,7 +275,7 @@ PlayerESPSection:Dropdown({
             Cyan = Color3.fromRGB(0, 255, 255),
             Purple = Color3.fromRGB(255, 0, 255),
         }
-        normalColor = colors[value] or Color3.fromHex("#ff2222")
+        normalColor = colors[value] or Color3.fromRGB(255, 255, 255)
         if PlayerESPEnabled then
             UpdateAllPlayerESP()
         end
@@ -281,15 +285,16 @@ PlayerESPSection:Dropdown({
     end,
 })
 
--- لون ESP للميتين (Blood Moon)
+-- لون ESP للميتين (أحمر)
 PlayerESPSection:Dropdown({
     Title = "Downed Color",
-    Values = { "Golden Orange", "Red", "Ocean Deep", "White", "Green", "Blue", "Yellow", "Cyan", "Purple" },
-    Default = "Golden Orange",
+    Values = { "Red", "Blood Red", "Golden Orange", "Ocean Deep", "White", "Green", "Blue", "Yellow", "Cyan", "Purple" },
+    Default = "Red",
     Callback = function(value)
         local colors = {
-            ["Golden Orange"] = Color3.fromHex("#ffaa00"),
             Red = Color3.fromRGB(255, 0, 0),
+            ["Blood Red"] = Color3.fromHex("#ff2222"),
+            ["Golden Orange"] = Color3.fromHex("#ffaa00"),
             ["Ocean Deep"] = Color3.fromRGB(0, 68, 170),
             White = Color3.fromRGB(255, 255, 255),
             Green = Color3.fromRGB(0, 255, 0),
@@ -298,7 +303,7 @@ PlayerESPSection:Dropdown({
             Cyan = Color3.fromRGB(0, 255, 255),
             Purple = Color3.fromRGB(255, 0, 255),
         }
-        downedColor = colors[value] or Color3.fromHex("#ffaa00")
+        downedColor = colors[value] or Color3.fromRGB(255, 0, 0)
         if PlayerESPEnabled then
             UpdateAllPlayerESP()
         end
@@ -322,10 +327,11 @@ PlayerESPSection:Button({
         end
     end,
 })
--- Toggle Highlight (Blood Moon)
+
+-- Toggle Highlight
 PlayerESPSection:Toggle({
     Title = "Player Highlight",
-    Desc = "Highlight players with Blood Moon colors",
+    Desc = "Highlight players with colors",
     Value = false,
     Callback = function(state)
         HighlightsEnabled = state
@@ -334,7 +340,7 @@ PlayerESPSection:Toggle({
             UpdateAllHighlights()
             if HighlightsConnection then HighlightsConnection:Disconnect() end
             HighlightsConnection = RunService.Heartbeat:Connect(UpdateAllHighlights)
-            WindUI:Notify({ Title = "Highlight", Content = "Enabled (Blood Moon Colors)", Duration = 2 })
+            WindUI:Notify({ Title = "Highlight", Content = "Enabled", Duration = 2 })
         else
             if HighlightsConnection then
                 HighlightsConnection:Disconnect()
@@ -345,7 +351,6 @@ PlayerESPSection:Toggle({
         end
     end,
 })
-
 -- ============================================
 -- 🛠️ Services & Player Definition
 -- ============================================
