@@ -36,11 +36,9 @@ local PlayerESPConnection = nil
 local HighlightsEnabled = false
 local HighlightsConnection = nil
 local PlayerHighlights = {}
-
--- الألوان المثالية لـ Blood Moon
-local normalColor = Color3.fromHex("#ff2222")        -- أحمر ناري غامق
-local downedColor = Color3.fromHex("#ffaa00")        -- برتقالي ذهبي (للتمييز)
-
+-- الألوان المثالية لـ 
+local normalColor = Color3.fromRGB(255, 255, 255)    -- أبيض
+local downedColor = Color3.fromRGB(255, 0, 0)        -- أحمر
 -- ================================
 -- دوال مشتركة
 -- ================================
