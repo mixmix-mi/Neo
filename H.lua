@@ -1,4 +1,72 @@
+-- ============================================
+-- Home Tab - About & Change Logs (مفتوحة تلقائياً)
+-- ============================================
 
+-- البحث عن تبويب Home أو إنشاؤه
+local HomeTab = nil
+if Tabs and Tabs.Home then
+    HomeTab = Tabs.Home
+elseif Window and Window.Tabs then
+    for _, tab in pairs(Window.Tabs) do
+        if tab and (tab.Title == "Home" or tab.Title == "الرئيسية") then
+            HomeTab = tab
+            break
+        end
+    end
+end
+
+if not HomeTab then
+    HomeTab = Window:Tab({
+        Title = "Home",
+        Icon = "home",
+        Locked = false
+    })
+end
+
+-- اختيار تبويب Home تلقائياً
+HomeTab:Select()
+
+-- ============================================
+-- About Section (مفتوحة)
+-- ============================================
+local AboutSection = HomeTab:Section({
+    Title = "About",
+    Side = "Left",
+    Collapsed = false,  -- مفتوحة
+})
+
+AboutSection:Paragraph({    
+    Title = "About Neo Hyper",    
+    Desc = "Made By : M4X EVA,  Special thanks: Amal Jana ",
+    Thumbnail = "rbxassetid://125307920527809",
+    ThumbnailSize = 60,
+})
+
+-- ============================================
+-- Change Logs Section (مفتوحة)
+-- ============================================
+local ChangeLogsSection = HomeTab:Section({
+    Title = "Change Logs",
+    Side = "Left",
+    Collapsed = false,  -- مفتوحة
+})
+
+ChangeLogsSection:Paragraph({
+    Title = [[
+    Change Logs Neo Hyper 1.0 ]],
+    TitleSize = 80,
+})
+
+print("✅ About & Change Logs loaded in Home tab!")
+
+-- ============================================
+-- تحديث: فتح القسمين تلقائياً
+-- ============================================
+task.wait(0.1)
+pcall(function()
+    AboutSection:Open()
+    ChangeLogsSection:Open()
+end)
 -- ============================================
 -- إنشاء تبويب Home (لو مش موجود)
 -- ============================================
