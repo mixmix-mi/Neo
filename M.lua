@@ -1592,7 +1592,7 @@ pcall(function()
     end
     
 -- ============================================
--- Floating Button (Blood Moon Style)
+-- Floating Button (نسخة سوداء)
 -- ============================================
 local function CreateBhopFloatingButton()
     local CoreGui = game:GetService("CoreGui")
@@ -1612,9 +1612,9 @@ local function CreateBhopFloatingButton()
     button.Position = UDim2.new(0, startX, 0, startY)
     button.Text = "BHOP: OFF"
     
-    -- 🩸 Blood Moon Colors
-    button.BackgroundColor3 = Color3.fromHex("#1a0000")      -- خلفية حمراء داكنة
-    button.TextColor3 = Color3.fromHex("#ffcccc")            -- نص أحمر فاتح
+    -- 🖤 ألوان سوداء
+    button.BackgroundColor3 = Color3.fromRGB(30, 30, 30)      -- خلفية رمادية داكنة
+    button.TextColor3 = Color3.fromRGB(255, 255, 255)         -- نص أبيض
     button.Font = Enum.Font.GothamBold
     button.TextSize = 14
     button.AutoButtonColor = false
@@ -1625,7 +1625,7 @@ local function CreateBhopFloatingButton()
     corner.Parent = button
     
     local stroke = Instance.new("UIStroke")
-    stroke.Color = Color3.fromHex("#660000")                 -- إطار أحمر داكن
+    stroke.Color = Color3.fromRGB(60, 60, 60)                 -- إطار رمادي
     stroke.Thickness = 2
     stroke.Parent = button
     
@@ -1638,7 +1638,7 @@ local function CreateBhopFloatingButton()
             dragging = true
             dragStart = input.Position
             startPos = button.Position
-            stroke.Color = Color3.fromHex("#ff4444")          -- أحمر ناري عند السحب
+            stroke.Color = Color3.fromRGB(150, 150, 150)       -- إطار أفتح عند السحب
             button.Text = "DRAG..."
         end
     end)
@@ -1653,7 +1653,7 @@ local function CreateBhopFloatingButton()
     button.InputEnded:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
             dragging = false
-            stroke.Color = autoJumpEnabled and Color3.fromHex("#ff4444") or Color3.fromHex("#660000")
+            stroke.Color = autoJumpEnabled and Color3.fromRGB(150, 150, 150) or Color3.fromRGB(60, 60, 60)
             button.Text = autoJumpEnabled and "BHOP: ON" or "BHOP: OFF"
         end
     end)
@@ -1662,8 +1662,8 @@ local function CreateBhopFloatingButton()
     local function handleTap()
         if not dragging then
             button.Text = "BHOP: ACTIVE"
-            button.BackgroundColor3 = Color3.fromHex("#3d0000")      -- أحمر متوسط عند التفعيل
-            stroke.Color = Color3.fromHex("#ff4444")
+            button.BackgroundColor3 = Color3.fromRGB(60, 60, 60)      -- أفتح قليلاً عند التفعيل
+            stroke.Color = Color3.fromRGB(150, 150, 150)
             
             autoJumpEnabled = not autoJumpEnabled
             
@@ -1678,8 +1678,8 @@ local function CreateBhopFloatingButton()
             end
             
             button.Text = autoJumpEnabled and "BHOP: ON" or "BHOP: OFF"
-            button.BackgroundColor3 = autoJumpEnabled and Color3.fromHex("#3d0000") or Color3.fromHex("#1a0000")
-            stroke.Color = autoJumpEnabled and Color3.fromHex("#ff4444") or Color3.fromHex("#660000")
+            button.BackgroundColor3 = autoJumpEnabled and Color3.fromRGB(60, 60, 60) or Color3.fromRGB(30, 30, 30)
+            stroke.Color = autoJumpEnabled and Color3.fromRGB(150, 150, 150) or Color3.fromRGB(60, 60, 60)
             
             -- تحديث Toggle في الواجهة
             pcall(function()
@@ -1694,14 +1694,14 @@ local function CreateBhopFloatingButton()
     return screenGui
 end
 
--- تحديث نص الزر العائم (Blood Moon)
+-- تحديث نص الزر العائم
 local function UpdateFloatingButtonText()
     pcall(function()
         if floatingButtonGui then
             local btn = floatingButtonGui:FindFirstChildOfClass("TextButton")
             if btn then
                 btn.Text = autoJumpEnabled and "BHOP: ON" or "BHOP: OFF"
-                btn.BackgroundColor3 = autoJumpEnabled and Color3.fromHex("#3d0000") or Color3.fromHex("#1a0000")
+                btn.BackgroundColor3 = autoJumpEnabled and Color3.fromRGB(60, 60, 60) or Color3.fromRGB(30, 30, 30)
             end
         end
     end)
