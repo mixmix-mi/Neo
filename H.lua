@@ -7,14 +7,18 @@ local Main = Window:Tab({
     Locked = false
 })
 
+-- اختيار تبويب Home تلقائياً
+Main:Select()
+
 -- ============================================
--- About Section (مفتوحة)
+-- About Section (مفتوحة تلقائياً)
 -- ============================================
 local AboutSection = Main:Section({
     Title = "About",
     Side = "Left",
-    Collapsed = false,  -- مفتوحة
-})    
+    Collapsed = false,
+})
+
 AboutSection:Paragraph({    
     Title = "About Neo Hyper",    
     Desc = "Made By : M4X EVA,  Special thanks: Amal Jana ",
@@ -23,18 +27,17 @@ AboutSection:Paragraph({
 })
 
 -- ============================================
--- تحديث: فتح القسمين تلقائياً
+-- فتح القسم تلقائياً
 -- ============================================
 task.wait(0.1)
 pcall(function()
-    AboutSection:Open(
+    AboutSection:Open()
 end)
 
-print("✅ About & Change Logs loaded in Home tab!")
+print("✅ About section loaded in Home tab!")
 
--- استخدام التاب
 -- ============================================
--- Player Modifications - M.lua
+-- Player Modifications
 -- ============================================
 
 -- تعريف الخدمات
@@ -47,7 +50,7 @@ local LP = Players.LocalPlayer
 -- ============================================
 -- Section Player Modifications
 -- ============================================
-local Section = HomeTab:Section({ 
+local Section = Main:Section({ 
     Title = "Player modifications",
     Side = "Left",
     Collapsed = false,
@@ -308,13 +311,15 @@ Section:Dropdown({
 
 Section:Space()
 
-print(" Player Modifications loaded!")
+print("✅ Player Modifications loaded!")
+
 -- ============================================
--- More Features - في تاب Main (تم التحويل للطريقة الجديدة)
+-- More Features - في تاب Main
 -- ============================================
 local MainSection = Main:Section({
     Title = "More Features",
     Side = "Left",
+    Collapsed = false,
 })
 
 -- زر إعادة الظهور
@@ -328,6 +333,81 @@ MainSection:Button({
 })
 
 -- زر Anti AFK
+local antiAFKEnabled = false
+local antiAFKConnection = nil
+
+local function StopAntiAFK()
+    if antiAFKConnection then
+        antiAFKConnection:Disconnect()
+        antiAFKConnection = nil
+    end
+end
+
+local function StartAntiAFK()
+    if antiAFKConnection then antiAFKConnection:Disconnect() end
+    antiAFKConnection = LP.Idled:Connect(function()
+        pcall(function()
+            game:GetService("VirtualUser"):CaptureController()
+            game:GetService("VirtualUser"):ClickButton2(Vector2.new())
+        end)
+    end)
+end
+
+MainSection:Toggle({
+    Title = "Anti AFK",
+    Default = false,
+    Callback = function(state)
+        antiAFKEnabled = state
+        if state then
+            StartAntiAFK()
+        else
+            StopAntiAFK()
+        end
+    end,
+})
+
+print("✅ More Features loaded!")
+
+-- ============================================
+-- More Features - في تاب Main
+-- ============================================
+local MainSection = Main:Section({
+    Title = "More Features",
+    Side = "Left",
+    Collapsed = false,
+})
+
+-- زر إعادة الظهور
+MainSection:Button({
+    Title = "Respawn",
+    Callback = function()
+        pcall(function()
+            ReplicatedStorage.Events.Player.ChangePlayerMode:FireServer(true)
+        end)
+    end,
+})
+
+-- زر Anti AFK
+local antiAFKEnabled = false
+local antiAFKConnection = nil
+
+local function StopAntiAFK()
+    if antiAFKConnection then
+        antiAFKConnection:Disconnect()
+        antiAFKConnection = nil
+    end
+end
+
+local function StartAntiAFK()
+    if antiAFKConnection then antiAFKConnection:Disconnect() end
+    antiAFKConnection = LP.Idled:Connect(function()
+        pcall(function()
+            game:GetService("VirtualUser"):CaptureController()
+            game:GetService("VirtualUser"):ClickButton2(Vector2.new())
+        end)
+    end)
+end
+
 MainSection:Toggle({
     Title = "Anti AFK",
     Default = false,
@@ -352,7 +432,6 @@ pcall(function()
     local UserInputService = game:GetService("UserInputService")
     local RunService = game:GetService("RunService")
     
-    -- زر إنشاء الواجهة العلوية المخصصة
     MainSection:Button({
         Title = "Custom Top Bar",
         Desc = "Hold buttons: Leaderboard, Zoom, Front View",
@@ -633,16 +712,12 @@ pcall(function()
                     hideTextWithDelay()
                 end
                 
-                -- ============================================
-                -- Hold to Enable Logic (اضغط واستمر عشان تشغل)
-                -- ============================================
+                -- Hold to Enable Logic
                 local isHolding = false
                 local holdConnection = nil
                 
-                -- Mouse Enter
                 ClickRegion.MouseEnter:Connect(expand)
                 
-                -- Mouse Leave (لو طلع برة الزر وهو ضاغط)
                 ClickRegion.MouseLeave:Connect(function()
                     contract()
                     if isHolding then
@@ -651,7 +726,6 @@ pcall(function()
                             holdConnection:Disconnect()
                             holdConnection = nil
                         end
-                        -- إيقاف الميزة
                         pcall(function()
                             local events = player.PlayerScripts:FindFirstChild("Events")
                             if events then
@@ -667,12 +741,10 @@ pcall(function()
                     end
                 end)
                 
-                -- الضغط (Down) - تشغيل الميزة
                 ClickRegion.MouseButton1Down:Connect(function()
                     if isHolding then return end
                     isHolding = true
                     
-                    -- تشغيل الميزة (Fire مرة واحدة)
                     pcall(function()
                         local events = player.PlayerScripts:FindFirstChild("Events")
                         if events then
@@ -685,20 +757,8 @@ pcall(function()
                             end
                         end
                     end)
-                    
-                    -- (اختياري) لو عايز loop مستمر، فك التعليق
-                    -- holdConnection = RunService.RenderStepped:Connect(function()
-                    --     if not isHolding then return end
-                    --     pcall(function()
-                    --         local useKeybind = player.PlayerScripts.Events.temporary_events.UseKeybind
-                    --         if useKeybind then
-                    --             useKeybind:Fire({Key = config.key, Down = true})
-                    --         end
-                    --     end)
-                    -- end)
                 end)
                 
-                -- رفع الإصبع (Up) - إيقاف الميزة
                 ClickRegion.MouseButton1Up:Connect(function()
                     if not isHolding then return end
                     isHolding = false
@@ -708,7 +768,6 @@ pcall(function()
                         holdConnection = nil
                     end
                     
-                    -- إيقاف الميزة
                     pcall(function()
                         local events = player.PlayerScripts:FindFirstChild("Events")
                         if events then
@@ -728,132 +787,8 @@ pcall(function()
         end
     })
 end)
-    local function hasAllFields(tbl)
-        if type(tbl) ~= "table" then return false end
-        for field in pairs(requiredFields) do
-            if rawget(tbl, field) == nil then return false end
-        end
-        return true
-    end
-    
-    -- البحث عن جداول الإعدادات
-    local function getConfigTables()
-        local tables = {}
-        local success, gc = pcall(function() return getgc(true) end)
-        if not success then return tables end
-        
-        for _, obj in ipairs(gc) do
-            if type(obj) == "table" and hasAllFields(obj) then
-                table.insert(tables, obj)
-            end
-        end
-        return tables
-    end
-    
-    -- تطبيق الإعدادات على الجداول
-    local function applyToTables(callback)
-        local targets = getConfigTables()
-        if #targets == 0 then return end
-        
-        if ApplyMode == "Optimized" then
-            task.spawn(function()
-                for i, tableObj in ipairs(targets) do
-                    pcall(callback, tableObj)
-                    if i % 3 == 0 then task.wait() end
-                end
-            end)
-        else
-            for _, tableObj in ipairs(targets) do
-                pcall(callback, tableObj)
-            end
-        end
-    end
-    
-    -- ===== Speed Input =====
-PlayerAdjustSection:Input({
-    Title = "Player Speed",
-    Desc = "Default: 1500",
-    Default = currentSettings.Speed,
-    Placeholder = "1500",
-    Numeric = true,
-    Callback = function(value)
-        local val = tonumber(value)
-        if val and val >= 1450 and val <= 100008888 then
-            currentSettings.Speed = tostring(val)
-            pcall(function()
-                applyToTables(function(obj) obj.Speed = val end)
-            end)
-            WindUI:Notify({ Title = "Speed", Content = "Set to: " .. val, Duration = 1 })
-        end
-    end
-})
-    -- ===== Jump Cap Input =====
-    PlayerAdjustSection:Input({
-        Title = "Player Jump Cap",
-        Desc = "Default: 1",
-        Default = currentSettings.JumpCap,
-        Placeholder = "1",
-        Numeric = true,
-        Callback = function(value)
-            local val = tonumber(value)
-            if val and val >= 0.1 and val <= 5088888 then
-                currentSettings.JumpCap = tostring(val)
-                applyToTables(function(obj) obj.JumpCap = val end)
-                WindUI:Notify({ Title = "Jump Cap", Content = "Set to: " .. val, Duration = 1 })
-            end
-        end
-    })
-    
--- ===== FOV Slider مع تأثير سلس =====
-PlayerAdjustSection:Slider({
-    Title = "Player FOV",
-    Desc = "Change camera field of view",
-    Value = { Min = 1, Max = 120, Default = 70 },
-    Callback = function(value)
-        pcall(function()
-            local camera = workspace.CurrentCamera
-            if camera then
-                local TweenService = game:GetService("TweenService")
-                local tween = TweenService:Create(camera, TweenInfo.new(0.3, Enum.EasingStyle.Quad), {
-                    FieldOfView = value
-                })
-                tween:Play()
-                WindUI:Notify({ Title = "FOV", Content = "Set to: " .. value, Duration = 1 })
-            end
-        end)
-    end
-})
-    
-    -- ===== Air Strafe Acceleration Input =====
-    PlayerAdjustSection:Input({
-        Title = "Air Strafe Acceleration",
-        Desc = "Default: 187",
-        Default = currentSettings.AirStrafeAcceleration,
-        Placeholder = "187",
-        Numeric = true,
-        Callback = function(value)
-            local val = tonumber(value)
-            if val and val >= 1 and val <= 1000888888 then
-                currentSettings.AirStrafeAcceleration = tostring(val)
-                applyToTables(function(obj) obj.AirStrafeAcceleration = val end)
-                WindUI:Notify({ Title = "Strafe", Content = "Set to: " .. val, Duration = 1 })
-            end
-        end
-    })
-    
-    -- ===== Apply Method Dropdown =====
-    PlayerAdjustSection:Dropdown({
-        Title = "Apply Method",
-        Values = { "Not Optimized", "Optimized" },
-        Default = ApplyMode,
-        Callback = function(value)
-            ApplyMode = value
-            WindUI:Notify({ Title = "Apply Method", Content = value, Duration = 1 })
-        end
-    })
-    
-    print("[Player Adjustments] Loaded successfully in Home tab!")
 
+print("✅ More Features loaded!")
 -- ====================================================================
 -- 🦅 HYPER V1.0 - FLY ENGINE & UI MODIFICATION (WINDUI VERSION)
 -- ====================================================================
@@ -896,17 +831,19 @@ pcall(function()
 
     -- تنفيذ الإخفاء فوراً
     HideTimerUI()
-    -- ====================================================================
-    -- 🦅 ميزة الطيران (Fly System)
-    -- ====================================================================
-    if not Tabs or not Tabs.Main then return end
-    local HomeTab = Tabs.Main
+  -- ====================================================================
+-- 🦅 ميزة الطيران (Fly System)
+-- ====================================================================
 
-    -- إنشاء القسم
-    local PlayerModSection = HomeTab:Section({
-        Title = "Fly",
-        Side = "Left",
-    })
+if not Tabs or not Tabs.Main then return end
+local HomeTab = Tabs.Main
+
+-- إنشاء القسم
+local PlayerModSection = HomeTab:Section({
+    Title = "Fly",
+    Side = "Left",
+    Collapsed = false,
+})
 
     -- المتغيرات الخاصة بالطيران
     local featureStates = { FlySpeed = 50 }
