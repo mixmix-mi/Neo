@@ -279,8 +279,6 @@ Section:Dropdown({
         getgenv().ApplyMode = value
     end,
 })
-
-
 -- ================================
 -- Yourself
 -- ================================
@@ -321,33 +319,27 @@ local function doRevive(char)
             pcall(function()
                 ReplicatedStorage.Events.Player.ChangePlayerMode:FireServer(true)
             end)
-            task.delay(10, function() hasRevived = false end)
+            task.delay(0.5, function() hasRevived = false end)
         end
     elseif featureStates.SelfReviveMethod == "Revive" then
         if hrp then lastSavedPosition = hrp.Position end
+        
+        pcall(function()
+            ReplicatedStorage.Events.Player.ChangePlayerMode:FireServer(true)
+        end)
+        
         task.spawn(function()
-            task.wait(3)
+            local newChar
             local startTime = tick()
             repeat
-                pcall(function()
-                    ReplicatedStorage.Events.Player.ChangePlayerMode:FireServer(true)
-                end)
-                task.wait(1)
-            until not char:GetAttribute("Downed") or (tick() - startTime > 1)
-
-            local newChar
-            repeat
                 newChar = player.Character
-                task.wait()
-            until newChar and newChar:FindFirstChild("HumanoidRootPart")
+                task.wait(0.05)
+            until newChar and newChar:FindFirstChild("HumanoidRootPart") or (tick() - startTime > 1.5)
 
-            local newHRP = newChar:FindFirstChild("HumanoidRootPart")
+            local newHRP = newChar and newChar:FindFirstChild("HumanoidRootPart")
             if lastSavedPosition and newHRP then
                 newHRP.CFrame = CFrame.new(lastSavedPosition)
-                task.wait(0.5)
-                if (newHRP.Position - lastSavedPosition).Magnitude > 1 then
-                    lastSavedPosition = nil
-                end
+                task.wait(0.1)
             end
         end)
     end
@@ -356,13 +348,15 @@ end
 local function setupAutoRevive(char)
     if AutoSelfReviveConnection then AutoSelfReviveConnection:Disconnect() end
     AutoSelfReviveConnection = char:GetAttributeChangedSignal("Downed"):Connect(function()
-        if char:GetAttribute("Downed") then doRevive(char) end
+        if char:GetAttribute("Downed") then 
+            doRevive(char) 
+        end
     end)
 end
 
 if respawnConnection then respawnConnection:Disconnect() end
 respawnConnection = player.CharacterAdded:Connect(function(newChar)
-    task.wait(1)
+    task.wait(0.5)
     if featureStates.AutoSelfRevive then setupAutoRevive(newChar) end
 end)
 
@@ -375,17 +369,131 @@ YourselfSection:Dropdown({
     end
 })
 
+YourselfSection:Toggle({
+    Title = "Auto Revive",
+    Value = false,
+    Callback = function(state)
+        featureStates.AutoSelfRevive = state
+        if state and player.Character then
+            setupAutoRevive(player.Character)
+        end
+    end
+})
+
 YourselfSection:Button({
-    Title = "Respawn",
+    Title = "Respawn Now",
     Callback = function()
         doRevive(player.Character)
+    end
+})
+
+-- ================================
+-- Floating Button - Revive (Blood Moon Style)
+-- ================================
+local reviveFloatingGui = nil
+
+local function CreateReviveFloatingButton()
+    local CoreGui = game:GetService("CoreGui")
+    
+    local oldGui = CoreGui:FindFirstChild("ReviveFloatingButton")
+    if oldGui then oldGui:Destroy() end
+    
+    local screenGui = Instance.new("ScreenGui")
+    screenGui.Name = "ReviveFloatingButton"
+    screenGui.ResetOnSpawn = false
+    screenGui.Parent = CoreGui
+    
+    local button = Instance.new("TextButton")
+    button.Size = UDim2.new(0, 160, 0, 55)
+    local startX = (workspace.CurrentCamera.ViewportSize.X / 2) - 80
+    local startY = (workspace.CurrentCamera.ViewportSize.Y / 2) - 27
+    button.Position = UDim2.new(0, startX, 0, startY)
+    button.Text = "REVIVE"
+    
+    -- Blood Moon Colors
+    button.BackgroundColor3 = Color3.fromHex("#1a0000")
+    button.TextColor3 = Color3.fromHex("#ffcccc")
+    button.Font = Enum.Font.GothamBold
+    button.TextSize = 14
+    button.AutoButtonColor = false
+    button.Parent = screenGui
+    
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0.2, 0)
+    corner.Parent = button
+    
+    local stroke = Instance.new("UIStroke")
+    stroke.Color = Color3.fromHex("#660000")
+    stroke.Thickness = 2
+    stroke.Parent = button
+    
+    local dragging = false
+    local dragStart, startPos
+    
+    button.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = true
+            dragStart = input.Position
+            startPos = button.Position
+            stroke.Color = Color3.fromHex("#ff4444")
+            button.Text = "DRAG..."
+        end
+    end)
+    
+    button.InputChanged:Connect(function(input)
+        if dragging and (input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseMovement) then
+            local delta = input.Position - dragStart
+            button.Position = UDim2.new(0, startPos.X.Offset + delta.X, 0, startPos.Y.Offset + delta.Y)
+        end
+    end)
+    
+    button.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = false
+            stroke.Color = Color3.fromHex("#660000")
+            button.Text = "REVIVE"
+        end
+    end)
+    
+    local function handleTap()
+        if not dragging then
+            button.BackgroundColor3 = Color3.fromHex("#3d0000")
+            stroke.Color = Color3.fromHex("#ff4444")
+            button.Text = "REVIVING..."
+            
+            doRevive(player.Character)
+            
+            task.wait(0.5)
+            button.BackgroundColor3 = Color3.fromHex("#1a0000")
+            stroke.Color = Color3.fromHex("#660000")
+            button.Text = "REVIVE"
+        end
+    end
+    
+    button.MouseButton1Click:Connect(handleTap)
+    button.TouchTap:Connect(handleTap)
+    
+    return screenGui
+end
+
+YourselfSection:Toggle({
+    Title = "Show Revive Button",
+    Value = false,
+    Callback = function(state)
+        if state then
+            reviveFloatingGui = CreateReviveFloatingButton()
+        else
+            if reviveFloatingGui then
+                pcall(function() reviveFloatingGui:Destroy() end)
+                reviveFloatingGui = nil
+            end
+        end
     end
 })
 
 if player.Character and featureStates.AutoSelfRevive then
     setupAutoRevive(player.Character)
 end
-
 -- ================================
 -- Interactions (Auto Carry & Auto Revive)
 -- ================================
@@ -691,6 +799,7 @@ RunService.RenderStepped:Connect(function()
         end
     end
 end)
+
 -- ============================================
 -- INFINITE SLIDE MODULE
 -- مع حماية Errors
