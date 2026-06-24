@@ -79,176 +79,125 @@ pcall(function()
     -- تنفيذ الإخفاء فوراً
     HideTimerUI()
     
-    -- ====================================================================
-    -- 🦅 ميزة الطيران (Fly System)
-    -- ====================================================================
-    if not Tabs or not Tabs.Main then return end
-    local HomeTab = Tabs.Main
+-- ====================================================================
+-- 🦅 ميزة الطيران (Fly System)
+-- ====================================================================
 
-    -- ✅ التصحيح: استخدم HomeTab بدلاً من Main
-    local PlayerModSection = HomeTab:Section({
-        Title = "Fly",
-        Side = "Left",
-    })
+-- التأكد من وجود تبويب Main (Home)
+if not Tabs or not Tabs.Main then return end
+local Main = Tabs.Main
 
-    -- المتغيرات الخاصة بالطيران
-    local featureStates = { FlySpeed = 50 }
-    local flying = false
-    local bodyVelocity = nil
-    local bodyGyro = nil
-    local character = LocalPlayer.Character
-    local humanoid = character and character:FindFirstChild("Humanoid")
-    local rootPart = character and character:FindFirstChild("HumanoidRootPart")
+-- إنشاء قسم الطيران
+local PlayerModSection = Main:Section({
+    Title = "Fly",
+    Side = "Left",
+})
+
+-- المتغيرات الخاصة بالطيران
+local featureStates = { FlySpeed = 50 }
+local flying = false
+local bodyVelocity = nil
+local bodyGyro = nil
+local character = LocalPlayer.Character
+local humanoid = character and character:FindFirstChild("Humanoid")
+local rootPart = character and character:FindFirstChild("HumanoidRootPart")
+local flyLoop = nil
+local characterAddedConnection = nil
+
+local function startFlying()
+    character = LocalPlayer.Character
+    if not character then return end
+    humanoid = character:WaitForChild("Humanoid", 3)
+    rootPart = character:WaitForChild("HumanoidRootPart", 3)
+    if not humanoid or not rootPart then return end
     
-    local flyLoop = nil
-    local characterAddedConnection = nil
-
-    local function startFlying()
-        character = LocalPlayer.Character
-        if not character then return end
-        humanoid = character:WaitForChild("Humanoid", 3)
-        rootPart = character:WaitForChild("HumanoidRootPart", 3)
-        if not humanoid or not rootPart then return end
-        
-        flying = true
-        
-        if bodyVelocity then bodyVelocity:Destroy() end
-        if bodyGyro then bodyGyro:Destroy() end
-
-        bodyVelocity = Instance.new("BodyVelocity")
-        bodyVelocity.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
-        bodyVelocity.Velocity = Vector3.new(0, 0, 0)
-        bodyVelocity.Parent = rootPart
-        
-        bodyGyro = Instance.new("BodyGyro")
-        bodyGyro.MaxTorque = Vector3.new(math.huge, math.huge, math.huge)
-        bodyGyro.CFrame = rootPart.CFrame
-        bodyGyro.Parent = rootPart
-        
-        humanoid.PlatformStand = true
-    end
-
-    local function stopFlying()
-        flying = false
-        if bodyVelocity then
-            bodyVelocity:Destroy()
-            bodyVelocity = nil
-        end
-        if bodyGyro then
-            bodyGyro:Destroy()
-            bodyGyro = nil
-        end
-        if humanoid then
-            humanoid.PlatformStand = false
-        end
-    end
-
-    local function updateFly()
-        if not flying or not bodyVelocity or not bodyGyro then return end
-        if not humanoid or not humanoid.Parent then return end
-
-        local camera = workspace.CurrentCamera
-        local cameraCFrame = camera.CFrame
-        local direction = Vector3.new(0, 0, 0)
-        local moveDirection = humanoid.MoveDirection
-        
-        if moveDirection.Magnitude > 0 then
-            local forwardVector = cameraCFrame.LookVector
-            local rightVector = cameraCFrame.RightVector
-            local forwardComponent = moveDirection:Dot(forwardVector) * forwardVector
-            local rightComponent = moveDirection:Dot(rightVector) * rightVector
-            direction = direction + (forwardComponent + rightComponent).Unit * moveDirection.Magnitude
-        end
-        
-        if UserInputService:IsKeyDown(Enum.KeyCode.Space) or humanoid.Jump then
-            direction = direction + Vector3.new(0, 1, 0)
-        end
-        if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then
-            direction = direction - Vector3.new(0, 1, 0)
-        end
-        
-        local speed = featureStates.FlySpeed or 50
-        bodyVelocity.Velocity = direction.Magnitude > 0 and direction.Unit * (speed * 2) or Vector3.new(0, 0, 0)
-        bodyGyro.CFrame = cameraCFrame
-    end
-
-    -- زر تفعيل الطيران (Toggle)
-    PlayerModSection:Toggle({
-        Title = "Fly",
-        Value = false,
-        Callback = function(state)
-            if state then
-                if characterAddedConnection then characterAddedConnection:Disconnect() end
-                
-                characterAddedConnection = LocalPlayer.CharacterAdded:Connect(function(newChar)
-                    character = newChar
-                    task.wait(0.5)
-                    humanoid = character:WaitForChild("Humanoid", 3)
-                    rootPart = character:WaitForChild("HumanoidRootPart", 3)
-                    
-                    if flying == false then
-                        startFlying()
-                    end
-                end)
-                
-                character = LocalPlayer.Character
-                if character then
-                    humanoid = character:FindFirstChild("Humanoid")
-                    rootPart = character:FindFirstChild("HumanoidRootPart")
-                end
-                
-                startFlying()
-                
-                if not flyLoop then
-                    flyLoop = RunService.RenderStepped:Connect(function()
-                        updateFly()
-                    end)
-                end
-            else
-                stopFlying()
-                
-                if flyLoop then
-                    flyLoop:Disconnect()
-                    flyLoop = nil
-                end
-                
-                if characterAddedConnection then
-                    characterAddedConnection:Disconnect()
-                    characterAddedConnection = nil
-                end
-            end
-        end,
-    })
-
-    -- إدخال سرعة الطيران (Input)
-    PlayerModSection:Input({
-        Title = "Fly Speed",
-        Default = "50",
-        Placeholder = "50",
-        Callback = function(value)
-            if value and tonumber(value) then
-                featureStates.FlySpeed = tonumber(value)
-            end
-        end,
-    }) 
+    flying = true
     
-    -- إيقاف الطيران عند الموت أو إزالة الشخصية
-    LocalPlayer.CharacterRemoving:Connect(function()
-        if flying then
-            stopFlying()
-            if flyLoop then
-                flyLoop:Disconnect()
-                flyLoop = nil
-            end
-        end
-    end)
+    if bodyVelocity then bodyVelocity:Destroy() end
+    if bodyGyro then bodyGyro:Destroy() end
 
-    -- إعادة تفعيل الطيران تلقائياً بعد الرسبون إذا كان الزرار مفعل
-    LocalPlayer.CharacterAdded:Connect(function(newChar)
-        if flying then
-            task.wait(0.5) 
-            stopFlying()
-            task.wait(0.1)
+    bodyVelocity = Instance.new("BodyVelocity")
+    bodyVelocity.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
+    bodyVelocity.Velocity = Vector3.new(0, 0, 0)
+    bodyVelocity.Parent = rootPart
+    
+    bodyGyro = Instance.new("BodyGyro")
+    bodyGyro.MaxTorque = Vector3.new(math.huge, math.huge, math.huge)
+    bodyGyro.CFrame = rootPart.CFrame
+    bodyGyro.Parent = rootPart
+    
+    humanoid.PlatformStand = true
+end
+
+local function stopFlying()
+    flying = false
+    if bodyVelocity then
+        bodyVelocity:Destroy()
+        bodyVelocity = nil
+    end
+    if bodyGyro then
+        bodyGyro:Destroy()
+        bodyGyro = nil
+    end
+    if humanoid then
+        humanoid.PlatformStand = false
+    end
+end
+
+local function updateFly()
+    if not flying or not bodyVelocity or not bodyGyro then return end
+    if not humanoid or not humanoid.Parent then return end
+
+    local camera = workspace.CurrentCamera
+    local cameraCFrame = camera.CFrame
+    local direction = Vector3.new(0, 0, 0)
+    local moveDirection = humanoid.MoveDirection
+    
+    if moveDirection.Magnitude > 0 then
+        local forwardVector = cameraCFrame.LookVector
+        local rightVector = cameraCFrame.RightVector
+        local forwardComponent = moveDirection:Dot(forwardVector) * forwardVector
+        local rightComponent = moveDirection:Dot(rightVector) * rightVector
+        direction = direction + (forwardComponent + rightComponent).Unit * moveDirection.Magnitude
+    end
+    
+    if UserInputService:IsKeyDown(Enum.KeyCode.Space) or humanoid.Jump then
+        direction = direction + Vector3.new(0, 1, 0)
+    end
+    if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then
+        direction = direction - Vector3.new(0, 1, 0)
+    end
+    
+    local speed = featureStates.FlySpeed or 50
+    bodyVelocity.Velocity = direction.Magnitude > 0 and direction.Unit * (speed * 2) or Vector3.new(0, 0, 0)
+    bodyGyro.CFrame = cameraCFrame
+end
+
+-- زر تفعيل الطيران (Toggle)
+PlayerModSection:Toggle({
+    Title = "Fly",
+    Value = false,
+    Callback = function(state)
+        if state then
+            if characterAddedConnection then characterAddedConnection:Disconnect() end
+            
+            characterAddedConnection = LocalPlayer.CharacterAdded:Connect(function(newChar)
+                character = newChar
+                task.wait(0.5)
+                humanoid = character:WaitForChild("Humanoid", 3)
+                rootPart = character:WaitForChild("HumanoidRootPart", 3)
+                
+                if flying == false then
+                    startFlying()
+                end
+            end)
+            
+            character = LocalPlayer.Character
+            if character then
+                humanoid = character:FindFirstChild("Humanoid")
+                rootPart = character:FindFirstChild("HumanoidRootPart")
+            end
+            
             startFlying()
             
             if not flyLoop then
@@ -256,9 +205,62 @@ pcall(function()
                     updateFly()
                 end)
             end
+        else
+            stopFlying()
+            
+            if flyLoop then
+                flyLoop:Disconnect()
+                flyLoop = nil
+            end
+            
+            if characterAddedConnection then
+                characterAddedConnection:Disconnect()
+                characterAddedConnection = nil
+            end
         end
-    end)
+    end,
+})
+
+-- إدخال سرعة الطيران (Input)
+PlayerModSection:Input({
+    Title = "Fly Speed",
+    Default = "50",
+    Placeholder = "50",
+    Callback = function(value)
+        if value and tonumber(value) then
+            featureStates.FlySpeed = tonumber(value)
+        end
+    end,
+})
+
+-- إيقاف الطيران عند الموت أو إزالة الشخصية
+LocalPlayer.CharacterRemoving:Connect(function()
+    if flying then
+        stopFlying()
+        if flyLoop then
+            flyLoop:Disconnect()
+            flyLoop = nil
+        end
+    end
 end)
+
+-- إعادة تفعيل الطيران تلقائياً بعد الرسبون
+LocalPlayer.CharacterAdded:Connect(function(newChar)
+    if flying then
+        task.wait(0.5)
+        stopFlying()
+        task.wait(0.1)
+        startFlying()
+        
+        if not flyLoop then
+            flyLoop = RunService.RenderStepped:Connect(function()
+                updateFly()
+            end)
+        end
+    end
+end)
+
+print("✅ Fly system loaded in Home tab!")
 
 -- ============================================
 -- More Features - في تاب Main
