@@ -642,6 +642,18 @@ local elementsToRegister = {
     -- ===== من ملف H.lua (Home) =====
     "AntiAFKToggle",
     "FlyToggle",
+    -- الأسماء الصحيحة للعناصر دي في elementsToRegister:
+"NextbotESP",                     -- Toggle
+"NextbotHighlight",               -- Toggle
+"NextbotESPColorDropdown",        -- Dropdown
+"NextbotHighlightColorDropdown",  -- Dropdown
+-- الأسماء الصحيحة للعناصر دي في elementsToRegister:
+"PlayerESP",               -- Toggle
+"NormalColorDropdown",     -- Dropdown
+"DownedColorDropdown",     -- Dropdown
+"PlayerHighlight",         -- Toggle
+-- "RefreshESPButton"      -- Button مش بيتسجل في الكونفج
+
     
     -- ===== من ملف M.lua (Misc) =====
     -- Player Modifications
