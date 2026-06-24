@@ -345,8 +345,17 @@ local function doRevive(char)
     end
 end
 
+-- ✅ دالة إعداد Auto Revive (مع تخزين الـ Connection)
 local function setupAutoRevive(char)
-    if AutoSelfReviveConnection then AutoSelfReviveConnection:Disconnect() end
+    -- ✅ إزالة الـ Connection القديم لو موجود
+    if AutoSelfReviveConnection then
+        AutoSelfReviveConnection:Disconnect()
+        AutoSelfReviveConnection = nil
+    end
+    
+    if not char then return end
+    
+    -- ✅ إنشاء Connection جديد
     AutoSelfReviveConnection = char:GetAttributeChangedSignal("Downed"):Connect(function()
         if char:GetAttribute("Downed") then 
             doRevive(char) 
@@ -354,10 +363,20 @@ local function setupAutoRevive(char)
     end)
 end
 
+-- ✅ دالة إيقاف Auto Revive
+local function stopAutoRevive()
+    if AutoSelfReviveConnection then
+        AutoSelfReviveConnection:Disconnect()
+        AutoSelfReviveConnection = nil
+    end
+end
+
 if respawnConnection then respawnConnection:Disconnect() end
 respawnConnection = player.CharacterAdded:Connect(function(newChar)
     task.wait(0.5)
-    if featureStates.AutoSelfRevive then setupAutoRevive(newChar) end
+    if featureStates.AutoSelfRevive then 
+        setupAutoRevive(newChar) 
+    end
 end)
 
 YourselfSection:Dropdown({
@@ -369,13 +388,23 @@ YourselfSection:Dropdown({
     end
 })
 
+-- ✅ Toggle مع إيقاف صحيح
 YourselfSection:Toggle({
     Title = "Auto Revive",
     Value = false,
     Callback = function(state)
         featureStates.AutoSelfRevive = state
-        if state and player.Character then
-            setupAutoRevive(player.Character)
+        
+        if state then
+            -- ✅ تشغيل
+            if player.Character then
+                setupAutoRevive(player.Character)
+            end
+            WindUI:Notify({ Title = "Auto Revive", Content = "Enabled", Duration = 2 })
+        else
+            -- ✅ إيقاف
+            stopAutoRevive()
+            WindUI:Notify({ Title = "Auto Revive", Content = "Disabled", Duration = 2 })
         end
     end
 })
@@ -386,6 +415,11 @@ YourselfSection:Button({
         doRevive(player.Character)
     end
 })
+
+-- ✅ التحقق عند بدء التشغيل
+if player.Character and featureStates.AutoSelfRevive then
+    setupAutoRevive(player.Character)
+end
 
 -- ================================
 -- Floating Button - Revive (Blood Moon Style)
@@ -410,7 +444,6 @@ local function CreateReviveFloatingButton()
     button.Position = UDim2.new(0, startX, 0, startY)
     button.Text = "REVIVE"
     
-    -- Blood Moon Colors
     button.BackgroundColor3 = Color3.fromHex("#1a0000")
     button.TextColor3 = Color3.fromHex("#ffcccc")
     button.Font = Enum.Font.GothamBold
@@ -490,10 +523,6 @@ YourselfSection:Toggle({
         end
     end
 })
-
-if player.Character and featureStates.AutoSelfRevive then
-    setupAutoRevive(player.Character)
-end
 -- ================================
 -- Interactions (Auto Carry & Auto Revive)
 -- ================================
