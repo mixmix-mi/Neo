@@ -42,7 +42,7 @@ task.spawn(function()
 end)
 --]]
 -- ===== تعطيل المخرجات أولاً =====
-print = function() end
+--print = function() end
 --pcall(function() end)
 
 -- ===== تحميل WindUI =====
