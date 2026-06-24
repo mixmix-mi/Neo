@@ -1702,22 +1702,31 @@ if MiscTab then
     })
 
     AutoTrimpSection:Input({
-        Title = "AutoTrimp Speed",
-        Flag = "AutoTrimpSpeedInput",
-        Value = tostring(getgenv().AutoTrimpSpeed),
-        Placeholder = "Enter speed value",
-        Numeric = true,
-        Callback = function(value)
-            local num = tonumber(value)
-            if num and num > 0 then
-                getgenv().AutoTrimpSpeed = num
-                if getgenv().AutoTrimpMode == "Constant" then
-                    currentSpeed = num
-                end
+    Title = "AutoTrimp Speed",
+    Flag = "AutoTrimpSpeedInput",
+    Value = tostring(getgenv().AutoTrimpSpeed),
+    Placeholder = "Enter speed value",
+    Numeric = true,
+    Callback = function(value)
+        local num = tonumber(value)
+        if num and num > 0 then
+            getgenv().AutoTrimpSpeed = num
+            -- ✅ تحديث currentSpeed في Constant و GroundAir
+            if getgenv().AutoTrimpMode == "Constant" or getgenv().AutoTrimpMode == "GroundAir" then
+                currentSpeed = num
+            end
+            -- ✅ في وضع Incremental، نحدّث الـ base speed بس
+            -- currentSpeed هيزيد من القيمة الجديدة
+            if WindUI and WindUI.Notify then
+                WindUI:Notify({
+                    Title = "AutoTrimp",
+                    Content = "Speed set to: " .. num,
+                    Duration = 2
+                })
             end
         end
-    })
-
+    end
+})
     AutoTrimpSection:Toggle({
         Title = "Enable BackTrimp",
         Flag = "BackTrimpToggle",
