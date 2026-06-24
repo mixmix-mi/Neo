@@ -474,179 +474,269 @@ PerfSection:Button({
 })
 
 -- ============================================
--- 3. Button Sizes
+-- Configuration System - WindUI (في Settings Tab)
 -- ============================================
-local SizesSection = SettingsTab:Section({
-    Title = "Button Sizes",
+
+-- ============================================
+-- 1. Config Section في Settings Tab
+-- ============================================
+local ConfigSection = SettingsTab:Section({
+    Title = "Configuration",
     Side = "Left",
     Collapsed = true,
 })
 
-local function UpdateButtonSize(buttonName, size)
-    local coreGui = game:GetService("CoreGui")
-    local gui = coreGui:FindFirstChild(buttonName)
-    if gui then
-        local btn = gui:FindFirstChildOfClass("TextButton")
-        if btn then
-            local newWidth = math.max(120, math.min(size, 350))
-            local newHeight = math.max(40, math.min(size * 0.35, 130))
-            btn.Size = UDim2.new(0, newWidth, 0, newHeight)
-            
-            local viewport = workspace.CurrentCamera.ViewportSize
-            local newX = (viewport.X / 2) - (newWidth / 2)
-            local newY = (viewport.Y / 2) - (newHeight / 2)
-            btn.Position = UDim2.new(0, newX, 0, newY)
-        end
-    end
-end
-
-SizesSection:Slider({
-    Title = "Bhop Button Size",
-    Value = { Min = 120, Max = 350, Default = 160 },
-    Callback = function(value)
-        UpdateButtonSize("BhopFloatingButton", value)
-    end,
-})
-
-SizesSection:Slider({
-    Title = "Lag Switch Button Size",
-    Value = { Min = 120, Max = 350, Default = 160 },
-    Callback = function(value)
-        UpdateButtonSize("LagSwitchFloatingButtonGUI", value)
-    end,
-})
-
-SizesSection:Slider({
-    Title = "Carry Button Size",
-    Value = { Min = 120, Max = 350, Default = 160 },
-    Callback = function(value)
-        UpdateButtonSize("CarryFloatingButton", value)
-    end,
-})
-
-SizesSection:Slider({
-    Title = "Demon Mode Button Size",
-    Value = { Min = 120, Max = 350, Default = 160 },
-    Callback = function(value)
-        UpdateButtonSize("DemonFloatingButton", value)
-    end,
-})
-
--- ============================================
--- 4. Button Positions
--- ============================================
-local PositionsSection = SettingsTab:Section({
-    Title = "Button Positions",
-    Side = "Left",
-    Collapsed = true,
-})
-
-local floatingButtons = {
-    "BhopFloatingButton",
-    "LagSwitchFloatingButtonGUI",
-    "CarryFloatingButton",
-    "DemonFloatingButton",
+-- متغيرات النظام
+local ConfigSystem = {
+    CurrentConfig = "",
+    ConfigsList = {},
+    ConfigFolder = "Hyper_Configs",
 }
 
-local function SaveButtonPositions()
-    local positions = {}
-    local coreGui = game:GetService("CoreGui")
-    
-    for _, btnName in ipairs(floatingButtons) do
-        local gui = coreGui:FindFirstChild(btnName)
-        if gui then
-            local btn = gui:FindFirstChildOfClass("TextButton")
-            if btn then
-                positions[btnName] = {
-                    X = btn.Position.X.Offset,
-                    Y = btn.Position.Y.Offset,
-                }
-            end
-        end
-    end
-    
-    local success = pcall(function()
-        writefile("Hyper_ButtonPositions.txt", game:GetService("HttpService"):JSONEncode(positions))
-    end)
-    
-    WindUI:Notify({ Title = "Positions", Content = success and "Saved" or "Failed", Duration = 2 })
-end
+-- ============================================
+-- 2. دوال النظام
+-- ============================================
 
-local function LoadButtonPositions()
-    local success, data = pcall(function()
-        return readfile("Hyper_ButtonPositions.txt")
-    end)
-    
-    if success and data then
-        local positions = game:GetService("HttpService"):JSONDecode(data)
-        local coreGui = game:GetService("CoreGui")
-        
-        for btnName, pos in pairs(positions) do
-            local gui = coreGui:FindFirstChild(btnName)
-            if gui then
-                local btn = gui:FindFirstChildOfClass("TextButton")
-                if btn then
-                    btn.Position = UDim2.new(0, pos.X, 0, pos.Y)
+-- الحصول على قائمة الملفات
+local function GetConfigFiles()
+    local files = {}
+    pcall(function()
+        local items = listfiles(ConfigSystem.ConfigFolder)
+        for _, item in ipairs(items) do
+            if item:match("%.json$") then
+                local name = item:match("([^/]+)%.json$")
+                if name then
+                    table.insert(files, name)
                 end
             end
         end
-        WindUI:Notify({ Title = "Positions", Content = "Loaded", Duration = 2 })
+    end)
+    return files
+end
+
+-- تحديث قائمة الملفات
+local function RefreshConfigList()
+    ConfigSystem.ConfigsList = GetConfigFiles()
+    return ConfigSystem.ConfigsList
+end
+
+-- حفظ الكونفج
+local function SaveConfig(name)
+    if not name or name == "" then
+        WindUI:Notify({ Title = "Config", Content = "Please enter a config name", Duration = 2 })
+        return false
+    end
+    
+    -- تجميع الإعدادات
+    local configData = {
+        name = name,
+        saved_at = os.date("%Y-%m-%d %H:%M:%S"),
+        settings = {
+            -- هنا هتضيف إعداداتك
+            speed = getgenv().Speed or 1500,
+            jumpCap = getgenv().JumpCap or 1,
+            strafe = getgenv().AirStrafeAcceleration or 187,
+            applyMode = getgenv().ApplyMode or "Unoptimized",
+        }
+    }
+    
+    local success = pcall(function()
+        writefile(ConfigSystem.ConfigFolder .. "/" .. name .. ".json", 
+                  game:GetService("HttpService"):JSONEncode(configData))
+    end)
+    
+    if success then
+        RefreshConfigList()
+        ConfigSystem.CurrentConfig = name
+        WindUI:Notify({ Title = "Config", Content = "Saved: " .. name, Duration = 2 })
+        return true
     else
-        WindUI:Notify({ Title = "Positions", Content = "No saved file", Duration = 2 })
+        WindUI:Notify({ Title = "Config", Content = "Failed to save", Duration = 2 })
+        return false
     end
 end
 
-PositionsSection:Button({
-    Title = "Save Button Positions",
-    Callback = SaveButtonPositions,
-})
-
-PositionsSection:Button({
-    Title = "Load Button Positions",
-    Callback = LoadButtonPositions,
-})
-
--- ============================================
--- 5. Reset All
--- ============================================
-local ResetSection = SettingsTab:Section({
-    Title = "Reset All",
-    Side = "Left",
-    Collapsed = true,
-})
-
-ResetSection:Button({
-    Title = "Reset All Settings",
-    Callback = function()
-        if flying then stopFlying() flying = false end
-        if autoJumpEnabled then autoJumpEnabled = false StopBhop() end
-        if bhopHoldEnabled then bhopHoldEnabled = false bhopHoldActive = false end
-        if rotationEnabled then rotationEnabled = false StopRotation() end
-        if gravityEnabled then gravityEnabled = false workspace.Gravity = originalGravity or 196.2 end
-        if reviveEnabled then reviveEnabled = false stopRevive() end
-        if autoCarryEnabled then autoCarryEnabled = false StopAutoCarry() end
-        if lagSwitchEnabled then lagSwitchEnabled = false end
-        if demonEnabled then demonEnabled = false end
-        
-        local coreGui = game:GetService("CoreGui")
-        local buttons = {
-            "BhopFloatingButton",
-            "LagSwitchFloatingButtonGUI",
-            "CarryFloatingButton",
-            "DemonFloatingButton",
-        }
-        
-        for _, btnName in ipairs(buttons) do
-            local gui = coreGui:FindFirstChild(btnName)
-            if gui then gui:Destroy() end
+-- تحميل الكونفج
+local function LoadConfig(name)
+    if not name or name == "" then
+        WindUI:Notify({ Title = "Config", Content = "Select a config", Duration = 2 })
+        return false
+    end
+    
+    local success, data = pcall(function()
+        return readfile(ConfigSystem.ConfigFolder .. "/" .. name .. ".json")
+    end)
+    
+    if success and data then
+        local config = game:GetService("HttpService"):JSONDecode(data)
+        if config and config.settings then
+            -- تطبيق الإعدادات
+            if config.settings.speed then
+                getgenv().Speed = config.settings.speed
+                -- تطبيق السرعة
+            end
+            if config.settings.jumpCap then
+                getgenv().JumpCap = config.settings.jumpCap
+                -- تطبيق Jump Cap
+            end
+            if config.settings.strafe then
+                getgenv().AirStrafeAcceleration = config.settings.strafe
+                -- تطبيق Strafe
+            end
+            if config.settings.applyMode then
+                getgenv().ApplyMode = config.settings.applyMode
+            end
+            
+            ConfigSystem.CurrentConfig = name
+            WindUI:Notify({ Title = "Config", Content = "Loaded: " .. name, Duration = 2 })
+            return true
         end
-        
-        if fpsTimerGui then fpsTimerGui:Destroy() fpsTimerGui = nil end
-        
-        WindUI:Notify({ Title = "Reset", Content = "All settings have been reset", Duration = 3 })
-    end,
+    end
+    
+    WindUI:Notify({ Title = "Config", Content = "Failed to load", Duration = 2 })
+    return false
+end
+
+-- حذف الكونفج
+local function DeleteConfig(name)
+    if not name or name == "" then
+        WindUI:Notify({ Title = "Config", Content = "Select a config", Duration = 2 })
+        return false
+    end
+    
+    local success = pcall(function()
+        delfile(ConfigSystem.ConfigFolder .. "/" .. name .. ".json")
+    end)
+    
+    if success then
+        RefreshConfigList()
+        if ConfigSystem.CurrentConfig == name then
+            ConfigSystem.CurrentConfig = ""
+        end
+        WindUI:Notify({ Title = "Config", Content = "Deleted: " .. name, Duration = 2 })
+        return true
+    else
+        WindUI:Notify({ Title = "Config", Content = "Failed to delete", Duration = 2 })
+        return false
+    end
+end
+
+-- إنشاء مجلد الإعدادات
+pcall(function()
+    makefolder(ConfigSystem.ConfigFolder)
+end)
+
+-- ============================================
+-- 3. واجهة المستخدم
+-- ============================================
+
+-- Dropdown لاختيار الملف
+local ConfigDropdown = ConfigSection:Dropdown({
+    Title = "Select Config",
+    Values = RefreshConfigList(),
+    Default = "",
+    Callback = function(value)
+        ConfigSystem.CurrentConfig = value
+    end
 })
 
+-- زر تحميل الملف
+ConfigSection:Button({
+    Title = "Load Config",
+    Callback = function()
+        if ConfigSystem.CurrentConfig and ConfigSystem.CurrentConfig ~= "" then
+            LoadConfig(ConfigSystem.CurrentConfig)
+        else
+            WindUI:Notify({ Title = "Config", Content = "Select a config first", Duration = 2 })
+        end
+    end
+})
+
+-- زر حفظ الملف
+ConfigSection:Button({
+    Title = "Save Config",
+    Callback = function()
+        if ConfigSystem.CurrentConfig and ConfigSystem.CurrentConfig ~= "" then
+            SaveConfig(ConfigSystem.CurrentConfig)
+        else
+            WindUI:Notify({ Title = "Config", Content = "Enter a config name first", Duration = 2 })
+        end
+    end
+})
+
+-- زر حذف الملف
+ConfigSection:Button({
+    Title = "Delete Config",
+    Callback = function()
+        if ConfigSystem.CurrentConfig and ConfigSystem.CurrentConfig ~= "" then
+            DeleteConfig(ConfigSystem.CurrentConfig)
+            ConfigSystem.CurrentConfig = ""
+            ConfigDropdown:SetValues(RefreshConfigList())
+        else
+            WindUI:Notify({ Title = "Config", Content = "Select a config first", Duration = 2 })
+        end
+    end
+})
+
+-- Input لإدخال اسم الملف
+ConfigSection:Input({
+    Title = "Config Name",
+    Placeholder = "Enter config name...",
+    Callback = function(value)
+        if value and value ~= "" then
+            ConfigSystem.CurrentConfig = value
+        end
+    end
+})
+
+-- زر إنشاء ملف جديد
+ConfigSection:Button({
+    Title = "Create Config",
+    Callback = function()
+        if ConfigSystem.CurrentConfig and ConfigSystem.CurrentConfig ~= "" then
+            SaveConfig(ConfigSystem.CurrentConfig)
+            ConfigDropdown:SetValues(RefreshConfigList())
+        else
+            WindUI:Notify({ Title = "Config", Content = "Enter a config name", Duration = 2 })
+        end
+    end
+})
+
+-- ============================================
+-- 4. Auto Load System
+-- ============================================
+local function AutoLoadLastConfig()
+    local configs = RefreshConfigList()
+    if #configs > 0 then
+        -- تحميل آخر كونفج تم استخدامه
+        local lastConfig = configs[#configs]
+        LoadConfig(lastConfig)
+        ConfigSystem.CurrentConfig = lastConfig
+        ConfigDropdown:SetValue(lastConfig)
+    end
+end
+
+-- تشغيل التحميل التلقائي
+task.spawn(function()
+    task.wait(2)
+    AutoLoadLastConfig()
+end)
+
+-- ============================================
+-- 5. زر تحديث القائمة
+-- ============================================
+ConfigSection:Button({
+    Title = "Refresh List",
+    Callback = function()
+        ConfigDropdown:SetValues(RefreshConfigList())
+        WindUI:Notify({ Title = "Config", Content = "List refreshed", Duration = 2 })
+    end
+})
+
+-- ============================================
+-- 6. إشعار التحميل
+-- ============================================
+print("[Config System] Loaded successfully in Settings tab!")
 -- ============================================
 -- 6. Themes Manager
 -- ============================================
