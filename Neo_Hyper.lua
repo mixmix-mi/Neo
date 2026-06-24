@@ -473,7 +473,354 @@ PerfSection:Button({
     end
 })
 
+-- ============================================
+-- CONFIG SYSTEM - HYPER V1.0 (Custom List Method)
+-- ============================================
 
+-- 1. التأكد من وجود ConfigManager
+local ConfigManager = Window.ConfigManager
+if not ConfigManager then
+    warn("[Config] ConfigManager not found!")
+end
+
+-- 2. إنشاء الكونفج الافتراضي
+local ConfigName = "HyperConfig"
+local myConfig = ConfigManager:CreateConfig(ConfigName)
+
+-- 3. التحميل التلقائي عند بدء التشغيل
+task.spawn(function()
+    task.wait(1.5)
+    local allConfigs = ConfigManager:AllConfigs()
+    if #allConfigs > 0 then
+        local firstConfig = allConfigs[1]
+        ConfigName = firstConfig
+        myConfig = ConfigManager:CreateConfig(firstConfig)
+        myConfig:Load()
+        print("[Config] Auto-loaded: " .. firstConfig)
+        if WindUI and WindUI.Notify then
+            WindUI:Notify({ Title = "Config", Content = "Loaded: " .. firstConfig, Duration = 2 })
+        end
+    end
+end)
+
+-- ============================================
+-- واجهة الكونفج في Settings Tab
+-- ============================================
+local SettingsTab = Window:Tab({
+    Title = "Settings",
+    Icon = "settings",
+    Locked = false,
+})
+
+local ConfigSection = SettingsTab:Section({
+    Title = "Configuration",
+    Side = "Left",
+    Collapsed = false,
+})
+
+-- Input لاسم الكونفج
+ConfigSection:Input({
+    Title = "Config Name",
+    Placeholder = "Enter config name...",
+    Value = ConfigName,
+    Callback = function(value)
+        if value and value ~= "" then
+            ConfigName = value
+        end
+    end
+})
+
+ConfigSection:Space()
+
+-- Dropdown لكل الكونفجات
+local AllConfigs = ConfigManager:AllConfigs()
+local AllConfigsDropdown = ConfigSection:Dropdown({
+    Title = "All Configs",
+    Values = #AllConfigs > 0 and AllConfigs or {"No Configs"},
+    Value = #AllConfigs > 0 and AllConfigs[1] or nil,
+    Callback = function(value)
+        if value and value ~= "No Configs" then
+            ConfigName = value
+        end
+    end
+})
+
+ConfigSection:Space()
+
+-- زر حفظ
+ConfigSection:Button({
+    Title = "Save Config",
+    Justify = "Center",
+    Callback = function()
+        if ConfigName and ConfigName ~= "" then
+            myConfig = ConfigManager:Config(ConfigName)
+            if myConfig:Save() then
+                WindUI:Notify({ Title = "Saved", Content = "Config: " .. ConfigName, Duration = 2 })
+                AllConfigsDropdown:Refresh(ConfigManager:AllConfigs())
+            else
+                WindUI:Notify({ Title = "Error", Content = "No elements with Flag found!", Duration = 3 })
+            end
+        else
+            WindUI:Notify({ Title = "Error", Content = "Enter a config name", Duration = 2 })
+        end
+    end
+})
+
+ConfigSection:Space()
+
+-- زر تحميل
+ConfigSection:Button({
+    Title = "Load Config",
+    Justify = "Center",
+    Callback = function()
+        if ConfigName and ConfigName ~= "" and ConfigName ~= "No Configs" then
+            myConfig = ConfigManager:CreateConfig(ConfigName)
+            if myConfig:Load() then
+                WindUI:Notify({ Title = "Loaded", Content = "Config: " .. ConfigName, Duration = 2 })
+            else
+                WindUI:Notify({ Title = "Error", Content = "Failed to load", Duration = 2 })
+            end
+        else
+            WindUI:Notify({ Title = "Error", Content = "Select a config first", Duration = 2 })
+        end
+    end
+})
+
+ConfigSection:Space()
+
+-- زر حذف
+ConfigSection:Button({
+    Title = "Delete Config",
+    Justify = "Center",
+    Callback = function()
+        if ConfigName and ConfigName ~= "" and ConfigName ~= "No Configs" then
+            myConfig = ConfigManager:CreateConfig(ConfigName)
+            if myConfig:Delete() then
+                WindUI:Notify({ Title = "Deleted", Content = "Config: " .. ConfigName, Duration = 2 })
+                AllConfigsDropdown:Refresh(ConfigManager:AllConfigs())
+                ConfigName = ""
+            else
+                WindUI:Notify({ Title = "Error", Content = "Failed to delete", Duration = 2 })
+            end
+        else
+            WindUI:Notify({ Title = "Error", Content = "Select a config first", Duration = 2 })
+        end
+    end
+})
+
+ConfigSection:Space()
+
+-- زر إنشاء
+ConfigSection:Button({
+    Title = "Create Config",
+    Justify = "Center",
+    Callback = function()
+        if ConfigName and ConfigName ~= "" then
+            myConfig = ConfigManager:CreateConfig(ConfigName)
+            if myConfig:Save() then
+                WindUI:Notify({ Title = "Created", Content = "Config: " .. ConfigName, Duration = 2 })
+                AllConfigsDropdown:Refresh(ConfigManager:AllConfigs())
+                AllConfigsDropdown:SetValue(ConfigName)
+            else
+                WindUI:Notify({ Title = "Error", Content = "Failed to create", Duration = 2 })
+            end
+        else
+            WindUI:Notify({ Title = "Error", Content = "Enter a name first", Duration = 2 })
+        end
+    end
+})
+
+ConfigSection:Space()
+
+-- زر تحديث القائمة
+ConfigSection:Button({
+    Title = "Refresh List",
+    Justify = "Center",
+    Callback = function()
+        AllConfigsDropdown:Refresh(ConfigManager:AllConfigs())
+        WindUI:Notify({ Title = "Refreshed", Content = "List updated", Duration = 2 })
+    end
+})
+
+-- ============================================
+-- 🔵 تسجيل العناصر بقائمة مخصصة (الطريقة الرابعة)
+-- ============================================
+
+-- قائمة الـ Flags لكل العناصر في كل الملفات
+local elementsToRegister = {
+    -- ===== من ملف H.lua (Home) =====
+    -- Anti AFK
+    "AntiAFKToggle",
+    
+    -- Fly
+    "FlyToggle",
+    
+    -- ===== من ملف M.lua (Misc) =====
+    -- Player Modifications
+    "SpeedInput",
+    "JumpCapInput",
+    "StrafeInput",
+    "ApplyMethodDropdown",
+    
+    -- Yourself
+    "AutoReviveToggle",
+    "RespawnMethodDropdown",
+    "ReviveFloatingButtonToggle",
+    
+    -- Interactions
+    "CarryToggle",
+    "CarryDelayInput",
+    "ReviveToggle",
+    "ReviveDelayInput",
+    
+    -- Infinite Slide
+    "InfiniteSlideToggle",
+    "SlideFrictionSlider",
+    
+    -- AutoTrimp
+    "AutoTrimpToggle",
+    "AutoTrimpGUIToggle",
+    "BaseSpeedSlider",
+    "MaxExtraSpeedSlider",
+    "AccelerationRateSlider",
+    
+    -- Auto Jump
+    "AutoJumpTypeDropdown",
+    "RotationToggle",
+    "BunnyHopToggle",
+    "BhopHoldToggle",
+    "BhopButtonToggle",
+    "JumpPowerSlider",
+    "BhopModeDropdown",
+    "BhopAccelSlider",
+    "JumpCooldownSlider",
+    
+    -- Emote Speed
+    "EmoteSpeedModeDropdown",
+    "EmoteSpeedValueInput",
+    
+    -- Lag Switch
+    "LagSwitchToggle",
+    "LagDurationSlider",
+    "LagIntensitySlider",
+    "LagFloatingButtonToggle",
+    "LagKeybind",
+    
+    -- Demon Mode
+    "DemonToggle",
+    "DemonRiseHeightSlider",
+    "DemonRiseSpeedSlider",
+    "DemonLagDurationSlider",
+    "DemonLagIntensitySlider",
+    "DemonFloatingButtonToggle",
+    "DemonKeybind",
+    
+    -- Gravity
+    "GravityToggle",
+    "GravityValueInput",
+    "GravityFloatingButtonToggle",
+    "GravityKeybind",
+    
+    -- ===== من ملف E.lua (ESP) =====
+    -- Player ESP
+    "PlayerESP",
+    "NormalColorDropdown",
+    "DownedColorDropdown",
+    
+    -- Highlight
+    "PlayerHighlight",
+    
+    -- Nextbot
+    "NextbotESP",
+    "NextbotHighlight",
+    "NextbotESPColorDropdown",
+    "NextbotHighlightColorDropdown",
+    
+    -- Performance
+    "NoFogToggle",
+    "FullBrightToggle",
+    
+    -- Barriers
+    "RemoveBarriersToggle",
+    "BarriersVisibleToggle",
+    
+    -- ===== من ملف A.lua (Auto Farm) =====
+    "AFKFarmToggle",
+    "TicketFarmToggle",
+    "CashFarmToggle",
+    "AFKPlatformHeightSlider",
+    
+    -- ===== من ملف V.lua (VIP) =====
+    -- (الأزرار مش بتتسجل في الكونفج لأنها Buttons)
+}
+
+-- ============================================
+-- تسجيل كل العناصر في القائمة
+-- ============================================
+local registeredCount = 0
+
+for _, flag in ipairs(elementsToRegister) do
+    local element = nil
+    
+    -- البحث في Tabs.Misc
+    if Tabs and Tabs.Misc then
+        if Tabs.Misc.Toggles and Tabs.Misc.Toggles[flag] then
+            element = Tabs.Misc.Toggles[flag]
+        elseif Tabs.Misc.Sliders and Tabs.Misc.Sliders[flag] then
+            element = Tabs.Misc.Sliders[flag]
+        elseif Tabs.Misc.Inputs and Tabs.Misc.Inputs[flag] then
+            element = Tabs.Misc.Inputs[flag]
+        elseif Tabs.Misc.Dropdowns and Tabs.Misc.Dropdowns[flag] then
+            element = Tabs.Misc.Dropdowns[flag]
+        elseif Tabs.Misc.Keybinds and Tabs.Misc.Keybinds[flag] then
+            element = Tabs.Misc.Keybinds[flag]
+        end
+    end
+    
+    -- البحث في Tabs.ESP
+    if not element and Tabs and Tabs.ESP then
+        if Tabs.ESP.Toggles and Tabs.ESP.Toggles[flag] then
+            element = Tabs.ESP.Toggles[flag]
+        elseif Tabs.ESP.Sliders and Tabs.ESP.Sliders[flag] then
+            element = Tabs.ESP.Sliders[flag]
+        elseif Tabs.ESP.Dropdowns and Tabs.ESP.Dropdowns[flag] then
+            element = Tabs.ESP.Dropdowns[flag]
+        end
+    end
+    
+    -- البحث في Tabs.Auto
+    if not element and Tabs and Tabs.Auto then
+        if Tabs.Auto.Toggles and Tabs.Auto.Toggles[flag] then
+            element = Tabs.Auto.Toggles[flag]
+        elseif Tabs.Auto.Sliders and Tabs.Auto.Sliders[flag] then
+            element = Tabs.Auto.Sliders[flag]
+        end
+    end
+    
+    -- البحث في Tabs.Main (Home)
+    if not element and Tabs and Tabs.Main then
+        if Tabs.Main.Toggles and Tabs.Main.Toggles[flag] then
+            element = Tabs.Main.Toggles[flag]
+        elseif Tabs.Main.Inputs and Tabs.Main.Inputs[flag] then
+            element = Tabs.Main.Inputs[flag]
+        end
+    end
+    
+    -- البحث في Tabs.VIP
+    if not element and Tabs and Tabs.VIP then
+        if Tabs.VIP.Toggles and Tabs.VIP.Toggles[flag] then
+            element = Tabs.VIP.Toggles[flag]
+        end
+    end
+    
+    -- تسجيل العنصر لو اتوجد
+    if element then
+        myConfig:Register(flag, element)
+        registeredCount = registeredCount + 1
+    end
+end
+
+print("[Config] Registered " .. registeredCount .. " elements")
 -- ============================================
 -- 6. Themes Manager
 -- ============================================
