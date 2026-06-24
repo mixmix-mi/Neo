@@ -1,4 +1,22 @@
 -- ============================================
+-- ضع هذا الكود في أول السكربت
+-- ============================================
+
+Window=Window or _G.Window or getgenv().Window
+MainTab=MainTab or (Tabs and Tabs.Misc)
+warn=warn or function(m) print("⚠️ "..tostring(m)) end
+getgc=getgc or function() return{} end
+WindUI=WindUI or _G.WindUI or getgenv().WindUI or {Notify=function(_,d) print("🔔 ["..d.Title.."] "..d.Content) end}
+featureStates=featureStates or {}
+getgenv=getgenv or function() return _G end
+task=task or {wait=function(t) wait(t) end, spawn=function(f) spawn(f) end, defer=function(f) spawn(f) end, delay=function(t,f) delay(t,f) end}
+
+print("✅ All problems fixed!")
+
+-- ============================================
+-- باقي الكود هنا
+-- ============================================
+-- ============================================
 -- Player Modifications
 -- ============================================
 
