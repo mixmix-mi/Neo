@@ -1143,7 +1143,623 @@ end
 -- تشغيل الموديول
 LoadInfiniteSlide()
 
+-- ================================
+-- AutoTrimp & BackTrimp (Blood Moon Style)
+-- ================================
 
+local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+local Debris = game:GetService("Debris")
+local CoreGui = game:GetService("CoreGui")
+local Players = game:GetService("Players")
+local LP = Players.LocalPlayer
+local camera = workspace.CurrentCamera
+local PlayerGui = LP:WaitForChild("PlayerGui")
+
+-- ================================
+-- المتغيرات
+-- ================================
+getgenv().AutoTrimpEnabled = false
+getgenv().AutoTrimpSpeed = 50
+getgenv().AutoTrimpPosition = getgenv().AutoTrimpPosition or UDim2.new(0.5, -110, 0, 10)
+getgenv().AutoTrimpMode = "Incremental" -- "Incremental" or "Constant"
+getgenv().AutoTrimpIncrementRate = 2.5
+getgenv().BackTrimpEnabled = false
+
+local minSpeedOffset = 0
+local lastTick = tick()
+local airAccumulator = 0
+local airTotalTime = 0
+local wasAir = false
+local activeBV = nil
+local currentSpeed = getgenv().AutoTrimpSpeed
+local countingEnabled = false
+local speedometer = nil
+local speedometerConnection = nil
+local autoTrimpGUI = nil
+local backTrimpGUI = nil
+local debugTimer = 0
+
+local function truncate1Decimal(val)
+    return math.floor(val * 10) / 10
+end
+
+local function getSpeedometer()
+    local ok, spd = pcall(function()
+        return LP.PlayerGui.Shared.HUD.Overlay.Default.CharacterInfo.Item.Speedometer.Players
+    end)
+    if ok then return spd end
+    return nil
+end
+
+local function ForceUpdateSpeedometer()
+    if not speedometer then
+        speedometer = getSpeedometer()
+        if not speedometer then return end
+    end
+    
+    local displaySpeed = truncate1Decimal(currentSpeed)
+    if speedometer.Text ~= tostring(displaySpeed) then
+        speedometer.Text = tostring(displaySpeed)
+    end
+end
+
+local function SetupSpeedometerHook()
+    speedometer = getSpeedometer()
+    if not speedometer then return end
+    
+    if speedometerConnection then
+        speedometerConnection:Disconnect()
+        speedometerConnection = nil
+    end
+    
+    speedometerConnection = speedometer:GetPropertyChangedSignal("Text"):Connect(function()
+        local currentText = tonumber(speedometer.Text) or 0
+        if currentText < currentSpeed - 1 or currentText == 0 then
+            ForceUpdateSpeedometer()
+        end
+    end)
+end
+
+local function DebugPrint(message)
+    print("[AutoTrimp Debug] " .. message)
+end
+
+-- ================================
+-- إنشاء زر AutoTrimp العائم (Blood Moon Style)
+-- ================================
+local function CreateAutoTrimpGUI()
+    if PlayerGui:FindFirstChild("AutoTrimpGUI") then
+        PlayerGui.AutoTrimpGUI:Destroy()
+    end
+
+    local screenGui = Instance.new("ScreenGui")
+    screenGui.Name = "AutoTrimpGUI"
+    screenGui.ResetOnSpawn = false
+    screenGui.Parent = PlayerGui
+
+    local Container = Instance.new("Frame")
+    Container.Size = UDim2.new(0, 220, 0, 44)
+    Container.Position = getgenv().AutoTrimpPosition
+    Container.AnchorPoint = Vector2.new(0.5, 0)
+    Container.BackgroundTransparency = 1
+    Container.Parent = screenGui
+
+    local Button = Instance.new("TextButton")
+    Button.Size = UDim2.new(1, 0, 1, 0)
+    
+    Button.BackgroundColor3 = Color3.fromHex("#1a0000")
+    Button.BackgroundTransparency = 0.15
+    Button.Text = "AUTO TRIMP: OFF"
+    Button.Font = Enum.Font.GothamBold
+    Button.TextSize = 16
+    Button.TextColor3 = Color3.fromHex("#ffcccc")
+    Button.AutoButtonColor = false
+    Button.Parent = Container
+
+    local UICorner = Instance.new("UICorner", Button)
+    UICorner.CornerRadius = UDim.new(0.2, 0)
+    
+    local UIStroke = Instance.new("UIStroke", Button)
+    UIStroke.Color = Color3.fromHex("#660000")
+    UIStroke.Thickness = 2
+
+    Button.MouseEnter:Connect(function()
+        TweenService:Create(Button, TweenInfo.new(0.1), {BackgroundTransparency = 0.05}):Play()
+        UIStroke.Color = Color3.fromHex("#ff4444")
+        Button.TextColor3 = Color3.fromRGB(255, 255, 255)
+    end)
+    
+    Button.MouseLeave:Connect(function()
+        TweenService:Create(Button, TweenInfo.new(0.1), {BackgroundTransparency = 0.15}):Play()
+        UIStroke.Color = getgenv().AutoTrimpEnabled and Color3.fromHex("#ff4444") or Color3.fromHex("#660000")
+        Button.TextColor3 = Color3.fromHex("#ffcccc")
+    end)
+
+    Button.MouseButton1Click:Connect(function()
+        getgenv().AutoTrimpEnabled = not getgenv().AutoTrimpEnabled
+        Button.Text = "AUTO TRIMP: " .. (getgenv().AutoTrimpEnabled and "ON" or "OFF")
+        Button.BackgroundColor3 = getgenv().AutoTrimpEnabled and Color3.fromHex("#3d0000") or Color3.fromHex("#1a0000")
+        UIStroke.Color = getgenv().AutoTrimpEnabled and Color3.fromHex("#ff4444") or Color3.fromHex("#660000")
+        
+        if not getgenv().AutoTrimpEnabled then
+            if activeBV then activeBV:Destroy() activeBV = nil end
+            airAccumulator = 0
+            airTotalTime = 0
+            currentSpeed = getgenv().AutoTrimpSpeed
+            countingEnabled = false
+            ForceUpdateSpeedometer()
+        end
+    end)
+
+    local dragging, dragInput, dragStart, startPos = false, nil, Vector2.new(), Container.Position
+    local function update(input)
+        local delta = input.Position - dragStart
+        Container.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+    end
+
+    Button.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            dragInput = input
+            dragStart = input.Position
+            startPos = Container.Position
+            UIStroke.Color = Color3.fromHex("#ff4444")
+            Button.Text = "DRAG..."
+            
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    dragging = false
+                    getgenv().AutoTrimpPosition = Container.Position
+                    UIStroke.Color = getgenv().AutoTrimpEnabled and Color3.fromHex("#ff4444") or Color3.fromHex("#660000")
+                    Button.Text = "AUTO TRIMP: " .. (getgenv().AutoTrimpEnabled and "ON" or "OFF")
+                end
+            end)
+        end
+    end)
+
+    Button.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+            dragInput = input
+        end
+    end)
+
+    UserInputService.InputChanged:Connect(function(input)
+        if dragging and input == dragInput then
+            update(input)
+        end
+    end)
+
+    screenGui.Enabled = false
+    return screenGui
+end
+
+-- ================================
+-- إنشاء زر BackTrimp العائم (Blood Moon Style)
+-- ================================
+local function CreateBackTrimpGUI()
+    if PlayerGui:FindFirstChild("BackTrimpGUI") then
+        PlayerGui.BackTrimpGUI:Destroy()
+    end
+
+    local screenGui = Instance.new("ScreenGui")
+    screenGui.Name = "BackTrimpGUI"
+    screenGui.ResetOnSpawn = false
+    screenGui.Parent = PlayerGui
+
+    local Container = Instance.new("Frame")
+    Container.Size = UDim2.new(0, 220, 0, 44)
+    Container.Position = UDim2.new(0.5, -110, 0, 60)
+    Container.AnchorPoint = Vector2.new(0.5, 0)
+    Container.BackgroundTransparency = 1
+    Container.Parent = screenGui
+
+    local Button = Instance.new("TextButton")
+    Button.Size = UDim2.new(1, 0, 1, 0)
+    
+    Button.BackgroundColor3 = Color3.fromHex("#1a0000")
+    Button.BackgroundTransparency = 0.15
+    Button.Text = "BACK TRIMP: OFF"
+    Button.Font = Enum.Font.GothamBold
+    Button.TextSize = 16
+    Button.TextColor3 = Color3.fromHex("#ffcccc")
+    Button.AutoButtonColor = false
+    Button.Parent = Container
+
+    local UICorner = Instance.new("UICorner", Button)
+    UICorner.CornerRadius = UDim.new(0.2, 0)
+    
+    local UIStroke = Instance.new("UIStroke", Button)
+    UIStroke.Color = Color3.fromHex("#660000")
+    UIStroke.Thickness = 2
+
+    Button.MouseEnter:Connect(function()
+        TweenService:Create(Button, TweenInfo.new(0.1), {BackgroundTransparency = 0.05}):Play()
+        UIStroke.Color = Color3.fromHex("#ff4444")
+        Button.TextColor3 = Color3.fromRGB(255, 255, 255)
+    end)
+    
+    Button.MouseLeave:Connect(function()
+        TweenService:Create(Button, TweenInfo.new(0.1), {BackgroundTransparency = 0.15}):Play()
+        UIStroke.Color = getgenv().BackTrimpEnabled and Color3.fromHex("#ff4444") or Color3.fromHex("#660000")
+        Button.TextColor3 = Color3.fromHex("#ffcccc")
+    end)
+
+    Button.MouseButton1Click:Connect(function()
+        getgenv().BackTrimpEnabled = not getgenv().BackTrimpEnabled
+        Button.Text = "BACK TRIMP: " .. (getgenv().BackTrimpEnabled and "ON" or "OFF")
+        Button.BackgroundColor3 = getgenv().BackTrimpEnabled and Color3.fromHex("#3d0000") or Color3.fromHex("#1a0000")
+        UIStroke.Color = getgenv().BackTrimpEnabled and Color3.fromHex("#ff4444") or Color3.fromHex("#660000")
+    end)
+
+    local dragging, dragInput, dragStart, startPos = false, nil, Vector2.new(), Container.Position
+    local function update(input)
+        local delta = input.Position - dragStart
+        Container.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+    end
+
+    Button.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            dragInput = input
+            dragStart = input.Position
+            startPos = Container.Position
+            UIStroke.Color = Color3.fromHex("#ff4444")
+            Button.Text = "DRAG..."
+            
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    dragging = false
+                    UIStroke.Color = getgenv().BackTrimpEnabled and Color3.fromHex("#ff4444") or Color3.fromHex("#660000")
+                    Button.Text = "BACK TRIMP: " .. (getgenv().BackTrimpEnabled and "ON" or "OFF")
+                end
+            end)
+        end
+    end)
+
+    Button.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+            dragInput = input
+        end
+    end)
+
+    UserInputService.InputChanged:Connect(function(input)
+        if dragging and input == dragInput then
+            update(input)
+        end
+    end)
+
+    screenGui.Enabled = false
+    return screenGui
+end
+
+-- ================================
+-- إنشاء الأزرار
+-- ================================
+autoTrimpGUI = CreateAutoTrimpGUI()
+backTrimpGUI = CreateBackTrimpGUI()
+
+-- ================================
+-- حلقة التشغيل الرئيسية
+-- ================================
+RunService.RenderStepped:Connect(function()
+    local deltaTime = tick() - lastTick
+    lastTick = tick()
+    debugTimer = debugTimer + deltaTime
+
+    local char = LP.Character
+    if char then
+        local root = char:FindFirstChild("HumanoidRootPart")
+        local humanoid = char:FindFirstChild("Humanoid")
+        if root and humanoid then
+            if not speedometer or not speedometer.Parent then
+                speedometer = getSpeedometer()
+                if speedometer then
+                    SetupSpeedometerHook()
+                end
+            end
+            
+            local isAir = humanoid.FloorMaterial == Enum.Material.Air
+
+            if wasAir and not isAir then
+                if speedometer then
+                    ForceUpdateSpeedometer()
+                end
+                airTotalTime = 0
+                DebugPrint("Landed on ground - Speed retained: " .. truncate1Decimal(currentSpeed))
+            end
+            wasAir = isAir
+
+            if getgenv().AutoTrimpEnabled or getgenv().BackTrimpEnabled then
+                if isAir then
+                    airAccumulator = airAccumulator + deltaTime
+                    airTotalTime = airTotalTime + deltaTime
+                    
+                    if getgenv().AutoTrimpMode == "Incremental" then
+                        local incrementAmount = getgenv().AutoTrimpIncrementRate * deltaTime
+                        currentSpeed = currentSpeed + incrementAmount
+                        airAccumulator = 0
+                        
+                        DebugPrint("In Air - Speed: " .. truncate1Decimal(currentSpeed) .. 
+                                  " | Increment Rate: " .. getgenv().AutoTrimpIncrementRate .. 
+                                  " | Air Time: " .. truncate1Decimal(airTotalTime))
+                    else
+                        currentSpeed = getgenv().AutoTrimpSpeed
+                    end
+                else
+                    airAccumulator = 0
+                    if getgenv().AutoTrimpMode == "Constant" then
+                        currentSpeed = getgenv().AutoTrimpSpeed
+                    end
+                    airTotalTime = 0
+                end
+
+                if activeBV then activeBV:Destroy() end
+
+                local lookDir = camera.CFrame.LookVector
+                lookDir = Vector3.new(lookDir.X, 0, lookDir.Z)
+                if lookDir.Magnitude ~= 0 then
+                    lookDir = lookDir.Unit
+                end
+
+                if getgenv().BackTrimpEnabled then
+                    lookDir = -lookDir
+                end
+
+                local bv = Instance.new("BodyVelocity")
+                bv.Velocity = lookDir * currentSpeed
+                bv.MaxForce = Vector3.new(4e5, 0, 4e5)
+                bv.P = 1250
+                bv.Parent = root
+                Debris:AddItem(bv, 0.1)
+                activeBV = bv
+
+                countingEnabled = true
+                
+                if speedometer then
+                    ForceUpdateSpeedometer()
+                end
+            else
+                if activeBV then activeBV:Destroy() end
+                activeBV = nil
+                if not getgenv().AutoTrimpEnabled and not getgenv().BackTrimpEnabled then
+                    currentSpeed = getgenv().AutoTrimpSpeed
+                end
+                countingEnabled = false
+                airAccumulator = 0
+                airTotalTime = 0
+                wasAir = false
+                
+                if speedometer then
+                    ForceUpdateSpeedometer()
+                end
+            end
+        end
+    end
+    
+    if debugTimer >= 1 then
+        debugTimer = 0
+        DebugPrint("Current Speed: " .. truncate1Decimal(currentSpeed) .. 
+                  " | Mode: " .. getgenv().AutoTrimpMode .. 
+                  " | Increment Rate: " .. getgenv().AutoTrimpIncrementRate)
+    end
+end)
+
+-- ================================
+-- إعداد الـ Hook فوراً
+-- ================================
+task.spawn(function()
+    task.wait(1)
+    speedometer = getSpeedometer()
+    if speedometer then
+        SetupSpeedometerHook()
+        DebugPrint("Speedometer hook setup successfully!")
+    else
+        DebugPrint("Speedometer not found, will retry...")
+        task.wait(3)
+        speedometer = getSpeedometer()
+        if speedometer then
+            SetupSpeedometerHook()
+            DebugPrint("Speedometer hook setup successfully on retry!")
+        end
+    end
+end)
+
+-- ================================
+-- إعادة المحاولة عند إعادة الظهور
+-- ================================
+LP.CharacterAdded:Connect(function()
+    task.wait(2)
+    speedometer = getSpeedometer()
+    if speedometer then
+        SetupSpeedometerHook()
+        DebugPrint("Speedometer hook re-established after respawn!")
+    end
+end)
+
+-- ================================
+-- إضافة القسم في تبويب Misc
+-- ================================
+local MiscTab = Tabs.Misc
+if MiscTab then
+    local AutoTrimpSection = MiscTab:Section({
+        Title = "AutoTrimp",
+        Side = "Left",
+        Collapsed = false,
+    })
+
+    AutoTrimpSection:Toggle({
+        Title = "Show AutoTrimp GUI",
+        Flag = "AutoTrimpGUIToggle",
+        Value = false,
+        Callback = function(state)
+            autoTrimpGUI.Enabled = state
+            if not state then
+                getgenv().AutoTrimpEnabled = false
+                if activeBV then activeBV:Destroy() activeBV = nil end
+                airAccumulator = 0
+                airTotalTime = 0
+                currentSpeed = getgenv().AutoTrimpSpeed
+                countingEnabled = false
+                ForceUpdateSpeedometer()
+            end
+            if WindUI and WindUI.Notify then
+                WindUI:Notify({
+                    Title = "AutoTrimp",
+                    Content = state and "GUI shown" or "GUI hidden",
+                    Duration = 2
+                })
+            end
+        end
+    })
+
+    AutoTrimpSection:Toggle({
+        Title = "Enable AutoTrimp",
+        Flag = "AutoTrimpToggle",
+        Value = false,
+        Callback = function(state)
+            getgenv().AutoTrimpEnabled = state
+            if autoTrimpGUI and autoTrimpGUI.Enabled then
+                local btn = autoTrimpGUI:FindFirstChildOfClass("TextButton")
+                if btn then
+                    btn.Text = "AUTO TRIMP: " .. (state and "ON" or "OFF")
+                    btn.BackgroundColor3 = state and Color3.fromHex("#3d0000") or Color3.fromHex("#1a0000")
+                end
+            end
+            if not state then
+                if activeBV then activeBV:Destroy() activeBV = nil end
+                airAccumulator = 0
+                airTotalTime = 0
+                currentSpeed = getgenv().AutoTrimpSpeed
+                countingEnabled = false
+                ForceUpdateSpeedometer()
+            end
+            if WindUI and WindUI.Notify then
+                WindUI:Notify({
+                    Title = "AutoTrimp",
+                    Content = state and "Enabled" or "Disabled",
+                    Duration = 2
+                })
+            end
+        end
+    })
+
+    AutoTrimpSection:Dropdown({
+        Title = "Speed Mode",
+        Flag = "AutoTrimpModeDropdown",
+        Values = { "Incremental", "Constant" },
+        Default = "Incremental",
+        Callback = function(value)
+            getgenv().AutoTrimpMode = value
+            if value == "Constant" then
+                currentSpeed = getgenv().AutoTrimpSpeed
+            end
+            if WindUI and WindUI.Notify then
+                WindUI:Notify({
+                    Title = "AutoTrimp",
+                    Content = "Mode: " .. value,
+                    Duration = 2
+                })
+            end
+        end
+    })
+
+    AutoTrimpSection:Input({
+        Title = "Increment Rate",
+        Flag = "AutoTrimpIncrementRateInput",
+        Value = tostring(getgenv().AutoTrimpIncrementRate),
+        Placeholder = "Speed increase per second",
+        Numeric = true,
+        Callback = function(value)
+            local num = tonumber(value)
+            if num and num > 0 then
+                getgenv().AutoTrimpIncrementRate = num
+                DebugPrint("Increment Rate updated to: " .. num)
+                if WindUI and WindUI.Notify then
+                    WindUI:Notify({
+                        Title = "AutoTrimp",
+                        Content = "Increment Rate: " .. num,
+                        Duration = 2
+                    })
+                end
+            end
+        end
+    })
+
+    AutoTrimpSection:Input({
+        Title = "AutoTrimp Speed",
+        Flag = "AutoTrimpSpeedInput",
+        Value = tostring(getgenv().AutoTrimpSpeed),
+        Placeholder = "Enter speed value",
+        Numeric = true,
+        Callback = function(value)
+            local num = tonumber(value)
+            if num and num > 0 then
+                getgenv().AutoTrimpSpeed = num
+                if getgenv().AutoTrimpMode == "Constant" then
+                    currentSpeed = num
+                end
+            end
+        end
+    })
+
+    AutoTrimpSection:Toggle({
+        Title = "Enable BackTrimp",
+        Flag = "BackTrimpToggle",
+        Value = false,
+        Callback = function(state)
+            getgenv().BackTrimpEnabled = state
+            if backTrimpGUI and backTrimpGUI.Enabled then
+                local btn = backTrimpGUI:FindFirstChildOfClass("TextButton")
+                if btn then
+                    btn.Text = "BACK TRIMP: " .. (state and "ON" or "OFF")
+                    btn.BackgroundColor3 = state and Color3.fromHex("#3d0000") or Color3.fromHex("#1a0000")
+                end
+            end
+            if WindUI and WindUI.Notify then
+                WindUI:Notify({
+                    Title = "BackTrimp",
+                    Content = state and "Enabled" or "Disabled",
+                    Duration = 2
+                })
+            end
+        end
+    })
+
+    AutoTrimpSection:Toggle({
+        Title = "Show BackTrimp GUI",
+        Flag = "BackTrimpGUIToggle",
+        Value = false,
+        Callback = function(state)
+            backTrimpGUI.Enabled = state
+            if WindUI and WindUI.Notify then
+                WindUI:Notify({
+                    Title = "BackTrimp",
+                    Content = state and "GUI shown" or "GUI hidden",
+                    Duration = 2
+                })
+            end
+        end
+    })
+
+    AutoTrimpSection:Button({
+        Title = "Reset Speed",
+        Callback = function()
+            currentSpeed = getgenv().AutoTrimpSpeed
+            ForceUpdateSpeedometer()
+            if WindUI and WindUI.Notify then
+                WindUI:Notify({
+                    Title = "AutoTrimp",
+                    Content = "Speed reset to " .. getgenv().AutoTrimpSpeed,
+                    Duration = 2
+                })
+            end
+        end
+    })
+end
+
+print("[AutoTrimp & BackTrimp] Loaded successfully!")
 
 -- Auto Jump System v2 - WindUI Version
 -- ============================================
