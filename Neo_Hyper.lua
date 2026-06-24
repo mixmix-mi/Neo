@@ -515,15 +515,19 @@ local function GetConfigFiles()
 end
 
 -- تحديث القائمة المنسدلة
-local function RefreshConfigDropdown(dropdown)
+-- تحديث القائمة المنسدلة (نسخة أوتوماتيك)
+local function RefreshConfigList()
     configsList = GetConfigFiles()
     if #configsList == 0 then
-        table.insert(configsList, "No Configs")
+        configsList = {"No Configs"}
     end
-    dropdown:SetValues(configsList)
+    if ConfigDropdown then
+        ConfigDropdown:SetValues(configsList)
+    end
     return configsList
 end
-
+-- الاستخدام
+RefreshConfigList()
 -- ============================================
 -- 4. واجهة المستخدم
 -- ============================================
