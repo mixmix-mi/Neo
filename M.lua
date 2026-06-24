@@ -1475,18 +1475,16 @@ RunService.RenderStepped:Connect(function()
                 if isAir then
                     airAccumulator = airAccumulator + deltaTime
                     airTotalTime = airTotalTime + deltaTime
-                    -- AutoTrimp Mode = Ground + Air (السرعة بتزيد في الأرض والهواء)
-
-if getgenv().AutoTrimpMode == "GroundAir" then
-    -- زيادة السرعة في الأرض والهواء
-    local incrementAmount = getgenv().AutoTrimpIncrementRate * deltaTime
-    currentSpeed = currentSpeed + incrementAmount
-    airAccumulator = 0
-    
-    DebugPrint("Speed: " .. truncate1Decimal(currentSpeed) .. 
-              " | Increment Rate: " .. getgenv().AutoTrimpIncrementRate)
-end
-                    if getgenv().AutoTrimpMode == "Incremental" then
+                    
+                    -- وضع GroundAir (السرعة بتزيد في الأرض والهواء)
+                    if getgenv().AutoTrimpMode == "GroundAir" then
+                        local incrementAmount = getgenv().AutoTrimpIncrementRate * deltaTime
+                        currentSpeed = currentSpeed + incrementAmount
+                        airAccumulator = 0
+                        
+                        DebugPrint("Speed: " .. truncate1Decimal(currentSpeed) .. 
+                                  " | Increment Rate: " .. getgenv().AutoTrimpIncrementRate)
+                    elseif getgenv().AutoTrimpMode == "Incremental" then
                         local incrementAmount = getgenv().AutoTrimpIncrementRate * deltaTime
                         currentSpeed = currentSpeed + incrementAmount
                         airAccumulator = 0
@@ -1495,11 +1493,17 @@ end
                                   " | Increment Rate: " .. getgenv().AutoTrimpIncrementRate .. 
                                   " | Air Time: " .. truncate1Decimal(airTotalTime))
                     else
+                        -- Constant Mode
                         currentSpeed = getgenv().AutoTrimpSpeed
                     end
                 else
                     airAccumulator = 0
-                    if getgenv().AutoTrimpMode == "Constant" then
+                    
+                    -- في الأرض: لو GroundAir يزيد، لو Constant ثابت
+                    if getgenv().AutoTrimpMode == "GroundAir" then
+                        local incrementAmount = getgenv().AutoTrimpIncrementRate * deltaTime
+                        currentSpeed = currentSpeed + incrementAmount
+                    elseif getgenv().AutoTrimpMode == "Constant" then
                         currentSpeed = getgenv().AutoTrimpSpeed
                     end
                     airTotalTime = 0
@@ -1533,9 +1537,8 @@ end
             else
                 if activeBV then activeBV:Destroy() end
                 activeBV = nil
-                if not getgenv().AutoTrimpEnabled and not getgenv().BackTrimpEnabled then
-                    currentSpeed = getgenv().AutoTrimpSpeed
-                end
+                -- ✅ عند الإيقاف: ترجع السرعة للقيمة الطبيعية
+                currentSpeed = getgenv().AutoTrimpSpeed
                 countingEnabled = false
                 airAccumulator = 0
                 airTotalTime = 0
@@ -1548,14 +1551,14 @@ end
         end
     end
     
-    -- ✅ طباعة التصحيح كل ثانية (بدون end) الزائدة
+    -- طباعة التصحيح كل ثانية
     if debugTimer >= 1 then
         debugTimer = 0
         DebugPrint("Current Speed: " .. truncate1Decimal(currentSpeed) .. 
                   " | Mode: " .. getgenv().AutoTrimpMode .. 
                   " | Increment Rate: " .. getgenv().AutoTrimpIncrementRate)
     end
-end)  -- ✅ هنا end واحدة تقفل الـ Connect
+end)
 
 -- ================================
 -- إعداد الـ Hook فوراً
@@ -1655,25 +1658,27 @@ if MiscTab then
             end
         end
     })
-AutoTrimpSection:Dropdown({
-    Title = "Speed Mode",
-    Flag = "AutoTrimpModeDropdown",
-    Values = { "Incremental", "Constant", "GroundAir" },
-    Default = "Incremental",
-    Callback = function(value)
-        getgenv().AutoTrimpMode = value
-        if value == "Constant" then
-            currentSpeed = getgenv().AutoTrimpSpeed
+
+    AutoTrimpSection:Dropdown({
+        Title = "Speed Mode",
+        Flag = "AutoTrimpModeDropdown",
+        Values = { "Incremental", "Constant", "GroundAir" },
+        Default = "Incremental",
+        Callback = function(value)
+            getgenv().AutoTrimpMode = value
+            if value == "Constant" then
+                currentSpeed = getgenv().AutoTrimpSpeed
+            end
+            if WindUI and WindUI.Notify then
+                WindUI:Notify({
+                    Title = "AutoTrimp",
+                    Content = "Mode: " .. value,
+                    Duration = 2
+                })
+            end
         end
-        if WindUI and WindUI.Notify then
-            WindUI:Notify({
-                Title = "AutoTrimp",
-                Content = "Mode: " .. value,
-                Duration = 2
-            })
-        end
-    end
-})
+    })
+
     AutoTrimpSection:Input({
         Title = "Increment Rate",
         Flag = "AutoTrimpIncrementRateInput",
