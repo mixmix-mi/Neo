@@ -1160,6 +1160,8 @@ local PlayerGui = LP:WaitForChild("PlayerGui")
 -- ================================
 -- المتغيرات
 -- ================================
+local NATURAL_SPEED = 16
+
 getgenv().AutoTrimpEnabled = false
 getgenv().AutoTrimpSpeed = 50
 getgenv().AutoTrimpPosition = getgenv().AutoTrimpPosition or UDim2.new(0.5, -110, 0, 10)
@@ -1167,6 +1169,7 @@ getgenv().AutoTrimpMode = "Constant"
 getgenv().AutoTrimpIncrementRate = 2.5
 getgenv().BackTrimpEnabled = false
 
+local currentSpeed = NATURAL_SPEED
 local minSpeedOffset = 0
 local lastTick = tick()
 local airAccumulator = 0
@@ -1220,6 +1223,24 @@ local function SetupSpeedometerHook()
             ForceUpdateSpeedometer()
         end
     end)
+end
+
+local function ResetToNaturalSpeed()
+    pcall(function()
+        local char = LP.Character
+        if char then
+            local humanoid = char:FindFirstChild("Humanoid")
+            if humanoid then
+                humanoid.WalkSpeed = NATURAL_SPEED
+            end
+        end
+    end)
+    
+    -- تحديث الـ Speedometer
+    currentSpeed = NATURAL_SPEED
+    if speedometer then
+        ForceUpdateSpeedometer()
+    end
 end
 
 local function DebugPrint(message)
@@ -1434,6 +1455,7 @@ local function CreateBackTrimpGUI()
     return screenGui
 end
 
+   
 -- ================================
 -- إنشاء الأزرار
 -- ================================
@@ -1443,7 +1465,13 @@ backTrimpGUI = CreateBackTrimpGUI()
 -- ================================
 -- حلقة التشغيل الرئيسية
 -- ================================
-RunService.RenderStepped:Connect(function()
+if not getgenv().AutoTrimpEnabled and not getgenv().BackTrimpEnabled then
+    if activeBV then activeBV:Destroy() end
+    activeBV = nil
+    ResetToNaturalSpeed()  -- ✅ ترجع 16
+    return
+end
+        
     local deltaTime = tick() - lastTick
     lastTick = tick()
     debugTimer = debugTimer + deltaTime
@@ -1550,7 +1578,7 @@ RunService.RenderStepped:Connect(function()
             end
         end
     end
-    
+
     -- طباعة التصحيح كل ثانية
     if debugTimer >= 1 then
         debugTimer = 0
@@ -1628,37 +1656,7 @@ if MiscTab then
         end
     })
 
-    AutoTrimpSection:Toggle({
-        Title = "Enable AutoTrimp",
-        Flag = "AutoTrimpToggle",
-        Value = false,
-        Callback = function(state)
-            getgenv().AutoTrimpEnabled = state
-            if autoTrimpGUI and autoTrimpGUI.Enabled then
-                local btn = autoTrimpGUI:FindFirstChildOfClass("TextButton")
-                if btn then
-                    btn.Text = "AUTO TRIMP: " .. (state and "ON" or "OFF")
-                    btn.BackgroundColor3 = state and Color3.fromHex("#3d0000") or Color3.fromHex("#1a0000")
-                end
-            end
-            if not state then
-                if activeBV then activeBV:Destroy() activeBV = nil end
-                airAccumulator = 0
-                airTotalTime = 0
-                currentSpeed = getgenv().AutoTrimpSpeed
-                countingEnabled = false
-                ForceUpdateSpeedometer()
-            end
-            if WindUI and WindUI.Notify then
-                WindUI:Notify({
-                    Title = "AutoTrimp",
-                    Content = state and "Enabled" or "Disabled",
-                    Duration = 2
-                })
-            end
-        end
-    })
-
+    
     AutoTrimpSection:Dropdown({
         Title = "Speed Mode",
         Flag = "AutoTrimpModeDropdown",
@@ -1679,6 +1677,39 @@ if MiscTab then
         end
     })
 
+AutoTrimpSection:Toggle({
+    Title = "Enable AutoTrimp",
+    Flag = "AutoTrimpToggle",
+    Value = false,
+    Callback = function(state)
+        getgenv().AutoTrimpEnabled = state
+        if autoTrimpGUI and autoTrimpGUI.Enabled then
+            local btn = autoTrimpGUI:FindFirstChildOfClass("TextButton")
+            if btn then
+                btn.Text = "AUTO TRIMP: " .. (state and "ON" or "OFF")
+                btn.BackgroundColor3 = state and Color3.fromHex("#3d0000") or Color3.fromHex("#1a0000")
+            end
+        end
+        if not state then
+            if activeBV then activeBV:Destroy() activeBV = nil end
+            airAccumulator = 0
+            airTotalTime = 0
+            currentSpeed = 16  -- ✅ السرعة الطبيعية في Evade
+            countingEnabled = false
+            ForceUpdateSpeedometer()
+        else
+            -- ✅ لما تشغل، تبدأ من السرعة الطبيعية
+            currentSpeed = 16
+        end
+        if WindUI and WindUI.Notify then
+            WindUI:Notify({
+                Title = "AutoTrimp",
+                Content = state and "Enabled" or "Disabled",
+                Duration = 2
+            })
+        end
+    end
+})
     AutoTrimpSection:Input({
         Title = "Increment Rate",
         Flag = "AutoTrimpIncrementRateInput",
@@ -1727,61 +1758,60 @@ if MiscTab then
         end
     end
 })
-    AutoTrimpSection:Toggle({
-        Title = "Enable BackTrimp",
-        Flag = "BackTrimpToggle",
-        Value = false,
-        Callback = function(state)
-            getgenv().BackTrimpEnabled = state
-            if backTrimpGUI and backTrimpGUI.Enabled then
-                local btn = backTrimpGUI:FindFirstChildOfClass("TextButton")
-                if btn then
-                    btn.Text = "BACK TRIMP: " .. (state and "ON" or "OFF")
-                    btn.BackgroundColor3 = state and Color3.fromHex("#3d0000") or Color3.fromHex("#1a0000")
-                end
-            end
-            if WindUI and WindUI.Notify then
-                WindUI:Notify({
-                    Title = "BackTrimp",
-                    Content = state and "Enabled" or "Disabled",
-                    Duration = 2
-                })
+    
+AutoTrimpSection:Toggle({
+    Title = "Enable BackTrimp",
+    Flag = "BackTrimpToggle",
+    Value = false,
+    Callback = function(state)
+        getgenv().BackTrimpEnabled = state
+        if backTrimpGUI and backTrimpGUI.Enabled then
+            local btn = backTrimpGUI:FindFirstChildOfClass("TextButton")
+            if btn then
+                btn.Text = "BACK TRIMP: " .. (state and "ON" or "OFF")
+                btn.BackgroundColor3 = state and Color3.fromHex("#3d0000") or Color3.fromHex("#1a0000")
             end
         end
-    })
-
-    AutoTrimpSection:Toggle({
-        Title = "Show BackTrimp GUI",
-        Flag = "BackTrimpGUIToggle",
-        Value = false,
-        Callback = function(state)
-            backTrimpGUI.Enabled = state
-            if WindUI and WindUI.Notify then
-                WindUI:Notify({
-                    Title = "BackTrimp",
-                    Content = state and "GUI shown" or "GUI hidden",
-                    Duration = 2
-                })
-            end
+        if WindUI and WindUI.Notify then
+            WindUI:Notify({
+                Title = "BackTrimp",
+                Content = state and "Enabled" or "Disabled",
+                Duration = 2
+            })
         end
-    })
+    end
+})
 
-    AutoTrimpSection:Button({
-        Title = "Reset Speed",
-        Callback = function()
-            currentSpeed = getgenv().AutoTrimpSpeed
-            ForceUpdateSpeedometer()
-            if WindUI and WindUI.Notify then
-                WindUI:Notify({
-                    Title = "AutoTrimp",
-                    Content = "Speed reset to " .. getgenv().AutoTrimpSpeed,
-                    Duration = 2
-                })
-            end
+AutoTrimpSection:Toggle({
+    Title = "Show BackTrimp GUI",
+    Flag = "BackTrimpGUIToggle",
+    Value = false,
+    Callback = function(state)
+        backTrimpGUI.Enabled = state
+        if WindUI and WindUI.Notify then
+            WindUI:Notify({
+                Title = "BackTrimp",
+                Content = state and "GUI shown" or "GUI hidden",
+                Duration = 2
+            })
         end
-    })
-end
+    end
+})
 
+AutoTrimpSection:Button({
+    Title = "Reset Speed",
+    Callback = function()
+        currentSpeed = 16  -- ✅ السرعة الطبيعية في Evade
+        ForceUpdateSpeedometer()
+        if WindUI and WindUI.Notify then
+            WindUI:Notify({
+                Title = "AutoTrimp",
+                Content = "Speed reset to natural (16)",
+                Duration = 2
+            })
+        end
+    end
+})
 print("[AutoTrimp & BackTrimp] Loaded successfully!")
 
 -- Auto Jump System v2 - WindUI Version
