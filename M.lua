@@ -1143,6 +1143,8 @@ end
 -- تشغيل الموديول
 LoadInfiniteSlide()
 
+
+
 -- ================================
 -- AutoTrimp & BackTrimp (Blood Moon Style)
 -- ================================
@@ -1164,6 +1166,7 @@ getgenv().AutoTrimpEnabled = false
 getgenv().AutoTrimpSpeed = 50
 getgenv().AutoTrimpPosition = getgenv().AutoTrimpPosition or UDim2.new(0.5, -110, 0, 10)
 getgenv().AutoTrimpMode = "Incremental" -- "Incremental" or "Constant"
+getgenv().AutoTrimpIncrementRate = 2.5 -- سرعة الزيادة لكل ثانية
 getgenv().BackTrimpEnabled = false
 
 local minSpeedOffset = 0
@@ -1177,6 +1180,7 @@ local countingEnabled = false
 local speedometer = nil
 local autoTrimpGUI = nil
 local backTrimpGUI = nil
+local debugTimer = 0
 
 local function truncate1Decimal(val)
     return math.floor(val * 10) / 10
@@ -1188,6 +1192,13 @@ local function getSpeedometer()
     end)
     if ok then return spd end
     return nil
+end
+
+-- ================================
+-- دالة الطباعة للتصحيح (Debug)
+-- ================================
+local function DebugPrint(message)
+    print("[AutoTrimp Debug] " .. message)
 end
 
 -- ================================
@@ -1412,6 +1423,7 @@ backTrimpGUI = CreateBackTrimpGUI()
 RunService.RenderStepped:Connect(function()
     local deltaTime = tick() - lastTick
     lastTick = tick()
+    debugTimer = debugTimer + deltaTime
 
     local char = LP.Character
     if char then
@@ -1421,11 +1433,12 @@ RunService.RenderStepped:Connect(function()
             speedometer = getSpeedometer()
             local isAir = humanoid.FloorMaterial == Enum.Material.Air
 
+            -- ✅ عند الهبوط: نحتفظ بالسرعة ولا نرجعها للقيمة الأساسية
             if wasAir and not isAir then
-                -- ✅ عند الهبوط: إعادة ضبط السرعة للقيمة الأساسية
-                currentSpeed = getgenv().AutoTrimpSpeed
+                -- نحتفظ بالسرعة الحالية ولا نرجعها لـ 50
                 if speedometer then speedometer.Text = tostring(truncate1Decimal(currentSpeed)) end
                 airTotalTime = 0
+                DebugPrint("Landed on ground - Speed retained: " .. truncate1Decimal(currentSpeed))
             end
             wasAir = isAir
 
@@ -1436,19 +1449,24 @@ RunService.RenderStepped:Connect(function()
                     airTotalTime = airTotalTime + deltaTime
                     
                     if getgenv().AutoTrimpMode == "Incremental" then
-                        -- ✅ وضع التدريج (السرعة بتزيد 2 كل ثانية)
-                        while airAccumulator >= 1.0 do
-                            airAccumulator = airAccumulator - 1.0
-                            currentSpeed = currentSpeed + 2
-                        end
+                        -- ✅ وضع التدريج (السرعة بتزيد حسب المعدل المضبوط)
+                        local incrementAmount = getgenv().AutoTrimpIncrementRate * deltaTime
+                        currentSpeed = currentSpeed + incrementAmount
+                        airAccumulator = 0
+                        
+                        DebugPrint("In Air - Speed: " .. truncate1Decimal(currentSpeed) .. 
+                                  " | Increment Rate: " .. getgenv().AutoTrimpIncrementRate .. 
+                                  " | Air Time: " .. truncate1Decimal(airTotalTime))
                     else
                         -- ✅ وضع الثابت (السرعة ثابتة على Speed Input)
                         currentSpeed = getgenv().AutoTrimpSpeed
                     end
                 else
                     airAccumulator = 0
-                    -- ✅ على الأرض: السرعة ترجع للقيمة الأساسية
-                    currentSpeed = getgenv().AutoTrimpSpeed
+                    -- ✅ على الأرض: نحتفظ بالسرعة الحالية
+                    if getgenv().AutoTrimpMode == "Constant" then
+                        currentSpeed = getgenv().AutoTrimpSpeed
+                    end
                     airTotalTime = 0
                 end
 
@@ -1478,13 +1496,23 @@ RunService.RenderStepped:Connect(function()
             else
                 if activeBV then activeBV:Destroy() end
                 activeBV = nil
-                currentSpeed = getgenv().AutoTrimpSpeed
+                if not getgenv().AutoTrimpEnabled and not getgenv().BackTrimpEnabled then
+                    currentSpeed = getgenv().AutoTrimpSpeed
+                end
                 countingEnabled = false
                 airAccumulator = 0
                 airTotalTime = 0
                 wasAir = false
             end
         end
+    end
+    
+    -- طباعة التصحيح كل 5 ثواني
+    if debugTimer >= 5 then
+        debugTimer = 0
+        DebugPrint("Current Speed: " .. truncate1Decimal(currentSpeed) .. 
+                  " | Mode: " .. getgenv().AutoTrimpMode .. 
+                  " | Increment Rate: " .. getgenv().AutoTrimpIncrementRate)
     end
 end)
 
@@ -1578,6 +1606,29 @@ if MiscTab then
         end
     })
 
+    -- ✅ Input جديد للتحكم في سرعة الزيادة (Increment Rate)
+    AutoTrimpSection:Input({
+        Title = "Increment Rate",
+        Flag = "AutoTrimpIncrementRateInput",
+        Value = tostring(getgenv().AutoTrimpIncrementRate),
+        Placeholder = "Speed increase per second",
+        Numeric = true,
+        Callback = function(value)
+            local num = tonumber(value)
+            if num and num > 0 then
+                getgenv().AutoTrimpIncrementRate = num
+                DebugPrint("Increment Rate updated to: " .. num)
+                if WindUI and WindUI.Notify then
+                    WindUI:Notify({
+                        Title = "AutoTrimp",
+                        Content = "Increment Rate: " .. num,
+                        Duration = 2
+                    })
+                end
+            end
+        end
+    })
+
     -- Input سرعة AutoTrimp
     AutoTrimpSection:Input({
         Title = "AutoTrimp Speed",
@@ -1654,6 +1705,7 @@ if MiscTab then
 end
 
 print("[AutoTrimp & BackTrimp] Loaded successfully!")
+
 -- Auto Jump System v2 - WindUI Version
 -- ============================================
 pcall(function()
