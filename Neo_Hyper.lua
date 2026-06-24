@@ -740,7 +740,29 @@ local elementsToRegister = {
     "TicketFarmToggle",
     "CashFarmToggle",
     "AFKPlatformHeightSlider",
+    -- من V.lua (Visuals)
+    "HeadlessToggle",
+    "KorbloxToggle",
+    "Cosmetic1Input",
+    "Cosmetic2Input",
+    
+    -- Emote Slots (12 Slot)
+    "CurrentEmote1", "SelectEmote1",
+    "CurrentEmote2", "SelectEmote2",
+    "CurrentEmote3", "SelectEmote3",
+    "CurrentEmote4", "SelectEmote4",
+    "CurrentEmote5", "SelectEmote5",
+    "CurrentEmote6", "SelectEmote6",
+    "CurrentEmote7", "SelectEmote7",
+    "CurrentEmote8", "SelectEmote8",
+    "CurrentEmote9", "SelectEmote9",
+    "CurrentEmote10", "SelectEmote10",
+    "CurrentEmote11", "SelectEmote11",
+    "CurrentEmote12", "SelectEmote12",
+    
+    -- ... باقي الأسماء
 }
+
 -- قائمة الـ Flags لكل العناصر في كل الملفات
 
 -- ============================================
