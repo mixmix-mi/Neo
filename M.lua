@@ -236,9 +236,10 @@ local function createValidatedInput(config)
         end)
     end
 end
-
+-- ✅ بعد التعديل
 local speed = Section:Input({
     Title = "Speed",
+    Flag = "SpeedInput",  -- 👈 أضف ده
     Placeholder = "1500",
     Value = "1500",
     Callback = createValidatedInput({
@@ -250,6 +251,7 @@ local speed = Section:Input({
 
 local jumpc = Section:Input({
     Title = "Jump Cap",
+    Flag = "JumpCapInput",  -- 👈 أضف ده
     Placeholder = "1",
     Value = "1",
     Callback = createValidatedInput({
@@ -261,6 +263,7 @@ local jumpc = Section:Input({
 
 local strafes = Section:Input({
     Title = "Strafe speed",
+    Flag = "StrafeInput",  -- 👈 أضف ده
     Placeholder = "187",
     Value = "187",
     Callback = createValidatedInput({
@@ -272,6 +275,7 @@ local strafes = Section:Input({
 
 Section:Dropdown({
     Title = "Select Apply Method",
+    Flag = "ApplyMethodDropdown",  -- 👈 أضف ده
     Values = {"Unoptimized", "Optimized"},
     Multi = false,
     Default = "Unoptimized",
@@ -279,6 +283,7 @@ Section:Dropdown({
         getgenv().ApplyMode = value
     end,
 })
+
 -- ================================
 -- Yourself
 -- ================================
@@ -379,8 +384,10 @@ respawnConnection = player.CharacterAdded:Connect(function(newChar)
     end
 end)
 
+-- ✅ بعد التعديل
 YourselfSection:Dropdown({
     Title = "Respawn Method",
+    Flag = "RespawnMethodDropdown",  -- 👈 أضف ده
     Values = {"Spawnpoint", "Revive"},
     Default = "Spawnpoint",
     Callback = function(value)
@@ -388,34 +395,33 @@ YourselfSection:Dropdown({
     end
 })
 
--- ✅ Toggle مع إيقاف صحيح
+-- ✅ Toggle مع Flag
 YourselfSection:Toggle({
     Title = "Auto Revive",
+    Flag = "AutoReviveToggle",  -- 👈 أضف ده
     Value = false,
     Callback = function(state)
         featureStates.AutoSelfRevive = state
         
         if state then
-            -- ✅ تشغيل
             if player.Character then
                 setupAutoRevive(player.Character)
             end
             WindUI:Notify({ Title = "Auto Revive", Content = "Enabled", Duration = 2 })
         else
-            -- ✅ إيقاف
             stopAutoRevive()
             WindUI:Notify({ Title = "Auto Revive", Content = "Disabled", Duration = 2 })
         end
     end
 })
 
+-- Button مش محتاج Flag (مش بيتسجل في الكونفج)
 YourselfSection:Button({
     Title = "Respawn Now",
     Callback = function()
         doRevive(player.Character)
     end
 })
-
 -- ✅ التحقق عند بدء التشغيل
 if player.Character and featureStates.AutoSelfRevive then
     setupAutoRevive(player.Character)
@@ -734,6 +740,7 @@ local reviveFloatingGui = nil
 
 InteractionsSection:Toggle({
     Title = "Show Carry Button",
+    Flag = "CarryToggle",  -- 👈 أضف ده
     Value = false,
     Callback = function(state)
         if state then
@@ -750,6 +757,7 @@ InteractionsSection:Toggle({
 
 InteractionsSection:Input({
     Title = "Carry Delay (s)",
+    Flag = "CarryDelayInput",  -- 👈 أضف ده
     Placeholder = "0.1",
     Value = tostring(getgenv().AutoCarryDelay),
     Callback = function(val)
@@ -762,6 +770,7 @@ InteractionsSection:Input({
 
 InteractionsSection:Toggle({
     Title = "Show Revive Button",
+    Flag = "ReviveToggle",  -- 👈 أضف ده
     Value = false,
     Callback = function(state)
         if state then
@@ -778,6 +787,7 @@ InteractionsSection:Toggle({
 
 InteractionsSection:Input({
     Title = "Revive Delay (s)",
+    Flag = "ReviveDelayInput",  -- 👈 أضف ده
     Placeholder = "0.1",
     Value = tostring(getgenv().AutoReviveDelay),
     Callback = function(val)
@@ -1078,45 +1088,48 @@ local function LoadInfiniteSlide()
         
         -- إضافة عناصر الواجهة
         local slideToggle = false
-        SlideSection:Toggle({
-            Title = "Infinite Slide",
-            Value = false,
-            Callback = function(state)
-                pcall(function()
-                    slideToggle = state
-                    setInfiniteSlide(state)
-                end)
+SlideSection:Toggle({
+    Title = "Infinite Slide",
+    Flag = "InfiniteSlideToggle",  -- 👈 أضف ده
+    Value = false,
+    Callback = function(state)
+        pcall(function()
+            slideToggle = state
+            setInfiniteSlide(state)
+        end)
+    end
+})
+
+SlideSection:Slider({
+    Title = "Slide Friction",
+    Flag = "SlideFrictionSlider",  -- 👈 أضف ده
+    Desc = "Negative = faster slide | Positive = slower",
+    Value = { Min = -20, Max = 20, Default = -8 },
+    Step = 0.5,
+    Callback = function(value)
+        pcall(function()
+            updateSlideFriction(value)
+        end)
+    end
+})
+
+-- Button مش محتاج Flag
+SlideSection:Button({
+    Title = "Reset Settings",
+    Desc = "Disable slide and reset friction",
+    Callback = function()
+        pcall(function()
+            if infiniteSlideEnabled then
+                setInfiniteSlide(false)
+                slideToggle = false
             end
-        })
-        
-        SlideSection:Slider({
-            Title = "Slide Friction",
-            Desc = "Negative = faster slide | Positive = slower",
-            Value = { Min = -20, Max = 20, Default = -8 },
-            Step = 0.5,
-            Callback = function(value)
-                pcall(function()
-                    updateSlideFriction(value)
-                end)
+            updateSlideFriction(-8)
+            if WindUI and WindUI.Notify then
+                WindUI:Notify({ Title = "Reset", Content = "Slide reset to default", Duration = 2 })
             end
-        })
-        
-        SlideSection:Button({
-            Title = "Reset Settings",
-            Desc = "Disable slide and reset friction",
-            Callback = function()
-                pcall(function()
-                    if infiniteSlideEnabled then
-                        setInfiniteSlide(false)
-                        slideToggle = false
-                    end
-                    updateSlideFriction(-8)
-                    if WindUI and WindUI.Notify then
-                        WindUI:Notify({ Title = "Reset", Content = "Slide reset to default", Duration = 2 })
-                    end
-                end)
-            end
-        })
+        end)
+    end
+})
         
         print("[Infinite Slide] Module loaded successfully in Misc tab")
     end)
@@ -1322,104 +1335,110 @@ end
     
     RunService.RenderStepped:Connect(OnRenderStep)
     
-    -- ============================================
-    -- التأكد من وجود تبويب Misc
-    -- ============================================
-    local MiscTab = nil
-    if Tabs and Tabs.Misc then
-        MiscTab = Tabs.Misc
-    elseif Window and Window.Tabs then
-        for _, tab in pairs(Window.Tabs) do
-            if tab and (tab.Title == "Misc" or tab.Title == "Miscellaneous") then
-                MiscTab = tab
-                break
-            end
+
+-- ============================================
+-- التأكد من وجود تبويب Misc
+-- ============================================
+local MiscTab = nil
+if Tabs and Tabs.Misc then
+    MiscTab = Tabs.Misc
+elseif Window and Window.Tabs then
+    for _, tab in pairs(Window.Tabs) do
+        if tab and (tab.Title == "Misc" or tab.Title == "Miscellaneous") then
+            MiscTab = tab
+            break
         end
     end
-      if MiscTab then
-        local AutoTrimpSection = MiscTab:Section({
-            Title = "AutoTrimp",
-            Side = "Left",
-            Collapsed = false,
-        })
-        
-        -- زر تفعيل السكربت نفسه من المنيو
-        local AutoTrimpToggle = AutoTrimpSection:Toggle({
-            Title = "Enable AutoTrimp",
-            Value = autoTrimpEnabled,
-            Callback = function(value)
-                autoTrimpEnabled = value
-                UpdateFloatingButton()
-            end
-        })
+end
 
-        -- زر إظهار/إخفاء الزر العائم
-        AutoTrimpSection:Toggle({
-            Title = "Show AutoTrimp GUI",
-            Value = false,
-            Callback = function(state)
-                if state then
-                    if floatingButton then
-                        floatingButton:Destroy()
-                    end
-                    floatingButton = CreateFloatingButton()
-                    if WindUI and WindUI.Notify then
-                        WindUI:Notify({ Title = "Auto Trimp", Content = "Floating button shown", Duration = 2 })
-                    end
-                else
-                    if floatingButton then
-                        floatingButton:Destroy()
-                        floatingButton = nil
-                    end
-                end
-            end
-        })
-        
-        AutoTrimpSection:Slider({
-            Title = "Base Speed",
-            Desc = "Normal speed on ground",
-            Value = { Min = 20, Max = 80, Default = 40 },
-            Callback = function(value)
-                baseSpeed = value
-                currentSpeed = value
-            end
-        })
-        
-        AutoTrimpSection:Slider({
-            Title = "Max Extra Speed",
-            Desc = "Maximum additional speed in air",
-            Value = { Min = 0, Max = 60, Default = 0 },
-            Callback = function(value)
-                maxExtraSpeed = value
-            end
-        })
-        
-        AutoTrimpSection:Slider({
-            Title = "Acceleration Rate",
-            Desc = "How fast speed increases in air",
-            Value = { Min = 0.5, Max = 3, Default = 1.2, Step = 0.1 },
-            Callback = function(value)
-                accelerationRate = value
-            end
-        })
-        
-        AutoTrimpSection:Button({
-            Title = "Reset Speed",
-            Callback = function()
-                currentSpeed = baseSpeed
-                if WindUI and WindUI.Notify then
-                    WindUI:Notify({ Title = "AutoTrimp", Content = "Speed reset to " .. baseSpeed, Duration = 2 })
-                end
-            end
-        })
-    else
-        warn("[AutoTrimp] Misc tab not found, UI not created")
-    end
+if MiscTab then
+    local AutoTrimpSection = MiscTab:Section({
+        Title = "AutoTrimp",
+        Side = "Left",
+        Collapsed = false,
+    })
     
-    print("[AutoTrimp] Loaded successfully!")
-end)
-  
+    -- زر تفعيل السكربت نفسه من المنيو
+    local AutoTrimpToggle = AutoTrimpSection:Toggle({
+        Title = "Enable AutoTrimp",
+        Flag = "AutoTrimpToggle",  -- 👈 أضف ده
+        Value = autoTrimpEnabled,
+        Callback = function(value)
+            autoTrimpEnabled = value
+            UpdateFloatingButton()
+        end
+    })
 
+    -- زر إظهار/إخفاء الزر العائم
+    AutoTrimpSection:Toggle({
+        Title = "Show AutoTrimp GUI",
+        Flag = "AutoTrimpGUIToggle",  -- 👈 أضف ده
+        Value = false,
+        Callback = function(state)
+            if state then
+                if floatingButton then
+                    floatingButton:Destroy()
+                end
+                floatingButton = CreateFloatingButton()
+                if WindUI and WindUI.Notify then
+                    WindUI:Notify({ Title = "Auto Trimp", Content = "Floating button shown", Duration = 2 })
+                end
+            else
+                if floatingButton then
+                    floatingButton:Destroy()
+                    floatingButton = nil
+                end
+            end
+        end
+    })
+    
+    AutoTrimpSection:Slider({
+        Title = "Base Speed",
+        Flag = "BaseSpeedSlider",  -- 👈 أضف ده
+        Desc = "Normal speed on ground",
+        Value = { Min = 20, Max = 80, Default = 40 },
+        Callback = function(value)
+            baseSpeed = value
+            currentSpeed = value
+        end
+    })
+    
+    AutoTrimpSection:Slider({
+        Title = "Max Extra Speed",
+        Flag = "MaxExtraSpeedSlider",  -- 👈 أضف ده
+        Desc = "Maximum additional speed in air",
+        Value = { Min = 0, Max = 60, Default = 0 },
+        Callback = function(value)
+            maxExtraSpeed = value
+        end
+    })
+    
+    AutoTrimpSection:Slider({
+        Title = "Acceleration Rate",
+        Flag = "AccelerationRateSlider",  -- 👈 أضف ده
+        Desc = "How fast speed increases in air",
+        Value = { Min = 0.5, Max = 3, Default = 1.2, Step = 0.1 },
+        Callback = function(value)
+            accelerationRate = value
+        end
+    })
+    
+    -- Button مش محتاج Flag
+    AutoTrimpSection:Button({
+        Title = "Reset Speed",
+        Callback = function()
+            currentSpeed = baseSpeed
+            if WindUI and WindUI.Notify then
+                WindUI:Notify({ Title = "AutoTrimp", Content = "Speed reset to " .. baseSpeed, Duration = 2 })
+            end
+        end
+    })
+else
+    warn("[AutoTrimp] Misc tab not found, UI not created")
+end
+
+print("[AutoTrimp] Loaded successfully!")
+end)
 
 -- ============================================
 -- Auto Jump System v2 - WindUI Version
@@ -1826,141 +1845,148 @@ end
     
     LP.CharacterAdded:Connect(OnCharacterAdded)
     if LP.Character then OnCharacterAdded(LP.Character) end
-    
-    -- ============================================
-    -- إنشاء الـ Section في تبويب Misc
-    -- ============================================
-    local AutoJumpSection = Tabs.Misc:Section({
-        Title = "Auto Jump",
-        Side = "Left",
-        Collapsed = false,
-    })
-    
-    -- Auto Jump Type
-    AutoJumpSection:Dropdown({
-        Title = "Auto Jump Type",
-        Values = { "Bounce", "Realistic" },
-        Default = "Bounce",
-        Callback = function(value)
-            autoJumpType = value
-        end
-    })
-    
-    -- Rotation 360
-    AutoJumpSection:Toggle({
-        Title = "Rotation 360",
-        Value = false,
-        Callback = function(state)
-            rotationEnabled = state
-            UpdateRotationState()
-            WindUI:Notify({ Title = "Rotation", Content = state and "Enabled" or "Disabled", Duration = 2 })
-        end
-    })
-    
-    -- Bunny Hop
-    local BunnyHopToggle = AutoJumpSection:Toggle({
-        Title = "Bunny Hop",
-        Value = false,
-        Callback = function(state)
-            autoJumpEnabled = state
-            if state then
-                StartBhop()
-                SetupMobileJumpButton()
-                UpdateRotationState()
-                WindUI:Notify({ Title = "Bunny Hop", Content = "Enabled", Duration = 2 })
-            else
-                StopBhop()
-                StopRotation()
-                bhopHoldActive = false
-                WindUI:Notify({ Title = "Bunny Hop", Content = "Disabled", Duration = 2 })
-            end
-            UpdateFloatingButtonText()
-        end
-    })
-    
-    -- Bhop Hold (مستقل)
-    AutoJumpSection:Toggle({
-        Title = "Bhop Hold (Hold Space/Jump)",
-        Value = false,
-        Callback = function(state)
-            bhopHoldEnabled = state
-            if state then
-                SetupMobileJumpButton()
-                WindUI:Notify({ Title = "Bhop Hold", Content = "Enabled - Hold jump button", Duration = 2 })
-            else
-                bhopHoldActive = false
-                CleanupMobileConnections()
-                if not autoJumpEnabled then
-                    StopBhop()
-                end
-                WindUI:Notify({ Title = "Bhop Hold", Content = "Disabled", Duration = 2 })
-            end
-            UpdateFloatingButtonText()
-        end
-    })
-    
-    -- Jump Power
-    AutoJumpSection:Slider({
-        Title = "Jump Power",
-        Value = { Min = 30, Max = 150, Default = 50 },
-        Callback = function(value)
-            jumpPower = value
-        end
-    })
-    
-    -- Bhop Mode
-    AutoJumpSection:Dropdown({
-        Title = "Bhop Mode",
-        Values = { "Acceleration", "No Acceleration" },
-        Default = "Acceleration",
-        Callback = function(value)
-            bhopMode = value
-            if autoJumpEnabled or bhopHoldEnabled then ApplyBhopFriction() end
-        end
-    })
-    
-    -- Bhop Acceleration
-    AutoJumpSection:Slider({
-        Title = "Bhop Acceleration",
-        Value = { Min = -10, Max = -0.1, Default = -0.5 },
-        Step = 0.1,
-        Callback = function(value)
-            bhopAccelValue = value
-            if (autoJumpEnabled or bhopHoldEnabled) and bhopMode == "Acceleration" then
-                ApplyBhopFriction()
-            end
-        end
-    })
-    
-    -- Jump Cooldown
-    AutoJumpSection:Slider({
-        Title = "Jump Cooldown (Seconds)",
-        Value = { Min = 0.05, Max = 0.5, Default = 0.25 },
-        Step = 0.01,
-        Callback = function(value)
-            jumpCooldown = value
-        end
-    })
-    
-    -- Floating Button GUI
-    AutoJumpSection:Toggle({
-        Title = "Bhop Button GUI",
-        Value = false,
-        Callback = function(state)
-            if state then
-                floatingButtonGui = CreateBhopFloatingButton()
-            else
-                if floatingButtonGui then
-                    pcall(function() floatingButtonGui:Destroy() end)
-                    floatingButtonGui = nil
-                end
-            end
-        end
-    })
-    
-    print("[Auto Jump] Loaded successfully in Misc tab!")
-end)
+  -- ============================================
+-- إنشاء الـ Section في تبويب Misc
+-- ============================================
+local AutoJumpSection = Tabs.Misc:Section({
+    Title = "Auto Jump",
+    Side = "Left",
+    Collapsed = false,
+})
 
+-- Auto Jump Type
+AutoJumpSection:Dropdown({
+    Title = "Auto Jump Type",
+    Flag = "AutoJumpTypeDropdown",  -- 👈 أضف ده
+    Values = { "Bounce", "Realistic" },
+    Default = "Bounce",
+    Callback = function(value)
+        autoJumpType = value
+    end
+})
+
+-- Rotation 360
+AutoJumpSection:Toggle({
+    Title = "Rotation 360",
+    Flag = "RotationToggle",  -- 👈 أضف ده
+    Value = false,
+    Callback = function(state)
+        rotationEnabled = state
+        UpdateRotationState()
+        WindUI:Notify({ Title = "Rotation", Content = state and "Enabled" or "Disabled", Duration = 2 })
+    end
+})
+
+-- Bunny Hop
+local BunnyHopToggle = AutoJumpSection:Toggle({
+    Title = "Bunny Hop",
+    Flag = "BunnyHopToggle",  -- 👈 أضف ده
+    Value = false,
+    Callback = function(state)
+        autoJumpEnabled = state
+        if state then
+            StartBhop()
+            SetupMobileJumpButton()
+            UpdateRotationState()
+            WindUI:Notify({ Title = "Bunny Hop", Content = "Enabled", Duration = 2 })
+        else
+            StopBhop()
+            StopRotation()
+            bhopHoldActive = false
+            WindUI:Notify({ Title = "Bunny Hop", Content = "Disabled", Duration = 2 })
+        end
+        UpdateFloatingButtonText()
+    end
+})
+
+-- Bhop Hold (مستقل)
+AutoJumpSection:Toggle({
+    Title = "Bhop Hold (Hold Space/Jump)",
+    Flag = "BhopHoldToggle",  -- 👈 أضف ده
+    Value = false,
+    Callback = function(state)
+        bhopHoldEnabled = state
+        if state then
+            SetupMobileJumpButton()
+            WindUI:Notify({ Title = "Bhop Hold", Content = "Enabled - Hold jump button", Duration = 2 })
+        else
+            bhopHoldActive = false
+            CleanupMobileConnections()
+            if not autoJumpEnabled then
+                StopBhop()
+            end
+            WindUI:Notify({ Title = "Bhop Hold", Content = "Disabled", Duration = 2 })
+        end
+        UpdateFloatingButtonText()
+    end
+})
+
+-- Jump Power
+AutoJumpSection:Slider({
+    Title = "Jump Power",
+    Flag = "JumpPowerSlider",  -- 👈 أضف ده
+    Value = { Min = 30, Max = 150, Default = 50 },
+    Callback = function(value)
+        jumpPower = value
+    end
+})
+
+-- Bhop Mode
+AutoJumpSection:Dropdown({
+    Title = "Bhop Mode",
+    Flag = "BhopModeDropdown",  -- 👈 أضف ده
+    Values = { "Acceleration", "No Acceleration" },
+    Default = "Acceleration",
+    Callback = function(value)
+        bhopMode = value
+        if autoJumpEnabled or bhopHoldEnabled then ApplyBhopFriction() end
+    end
+})
+
+-- Bhop Acceleration
+AutoJumpSection:Slider({
+    Title = "Bhop Acceleration",
+    Flag = "BhopAccelSlider",  -- 👈 أضف ده
+    Value = { Min = -10, Max = -0.1, Default = -0.5 },
+    Step = 0.1,
+    Callback = function(value)
+        bhopAccelValue = value
+        if (autoJumpEnabled or bhopHoldEnabled) and bhopMode == "Acceleration" then
+            ApplyBhopFriction()
+        end
+    end
+})
+
+-- Jump Cooldown
+AutoJumpSection:Slider({
+    Title = "Jump Cooldown (Seconds)",
+    Flag = "JumpCooldownSlider",  -- 👈 أضف ده
+    Value = { Min = 0.05, Max = 0.5, Default = 0.25 },
+    Step = 0.01,
+    Callback = function(value)
+        jumpCooldown = value
+    end
+})
+
+-- Floating Button GUI
+AutoJumpSection:Toggle({
+    Title = "Bhop Button GUI",
+    Flag = "BhopButtonToggle",  -- 👈 أضف ده
+    Value = false,
+    Callback = function(state)
+        if state then
+            floatingButtonGui = CreateBhopFloatingButton()
+        else
+            if floatingButtonGui then
+                pcall(function() floatingButtonGui:Destroy() end)
+                floatingButtonGui = nil
+            end
+        end
+    end
+})
+
+print("[Auto Jump] Loaded successfully in Misc tab!")
+end)  
 -- ================================
 -- Emote modifications
 -- ================================
@@ -2178,6 +2204,7 @@ end
 -- Dropdown لاختيار الوضع
 EmoteSection:Dropdown({
     Title = "Emote Speed Mode",
+    Flag = "EmoteSpeedModeDropdown",  -- 👈 أضف ده
     Values = { "Nah", "Legit", "Multiplier speed" },
     Default = "Nah",
     Callback = function(value)
@@ -2195,6 +2222,7 @@ EmoteSection:Dropdown({
 -- Input للسرعة
 EmoteSection:Input({
     Title = "Emote Speed Value",
+    Flag = "EmoteSpeedValueInput",  -- 👈 أضف ده
     Description = "Changes the animation speed of your emotes",
     Placeholder = "1500",
     Numeric = true,
@@ -2208,7 +2236,7 @@ EmoteSection:Input({
     end
 })
 
--- زر تطبيق على الإيموشنات غير القابلة للمشي
+-- Button مش محتاج Flag
 EmoteSection:Button({
     Title = "Apply to Unwalkable Emotes",
     Desc = "Applies speed to emotes that normally can't move",
@@ -2224,7 +2252,7 @@ EmoteSection:Button({
     end
 })
 
--- زر إعادة تعيين
+-- Button مش محتاج Flag
 EmoteSection:Button({
     Title = "Reset All Emote Speeds",
     Desc = "Restores all emote speeds to original values",
@@ -2373,7 +2401,6 @@ local function CreateLagFloatingButton()
     
     return screenGui
 end
-
 -- ====================================================================
 -- ⚙️ دمج عناصر التحكم داخل لوحة WindUI
 -- ====================================================================
@@ -2384,6 +2411,7 @@ local LagSection = MiscTab:Section({
 
 LagSection:Toggle({
     Title = "Enable Lag Switch",
+    Flag = "LagSwitchToggle",  -- 👈 أضف ده
     Value = false,
     Callback = function(state)
         lagSwitchEnabled = state
@@ -2392,6 +2420,7 @@ LagSection:Toggle({
 
 LagSection:Slider({
     Title = "Lag Duration (seconds)",
+    Flag = "LagDurationSlider",  -- 👈 أضف ده
     Value = { Min = 0.1, Max = 5, Default = 1.5 },
     Step = 0.1,
     Callback = function(value) lagDuration = value end,
@@ -2399,12 +2428,14 @@ LagSection:Slider({
 
 LagSection:Slider({
     Title = "Lag Intensity",
+    Flag = "LagIntensitySlider",  -- 👈 أضف ده
     Value = { Min = 100000, Max = 5000000, Default = 1000000 },
     Callback = function(value) lagIntensity = value end,
 })
 
 LagSection:Toggle({
     Title = "Show Floating Button",
+    Flag = "LagFloatingButtonToggle",  -- 👈 أضف ده
     Value = false,
     Callback = function(state)
         if state then
@@ -2420,12 +2451,14 @@ LagSection:Toggle({
 
 LagSection:Keybind({
     Title = "Lag Keybind",
+    Flag = "LagKeybind",  -- 👈 أضف ده
     Default = "F12",
     Mode = "Press",
     Callback = TriggerLagAction,
     ChangedCallback = function(newKey) lagKeybind = newKey end,
 })
 
+-- Button مش محتاج Flag
 LagSection:Button({
     Title = "Trigger Lag Now",
     Callback = TriggerLagAction,
@@ -2441,6 +2474,7 @@ end)
 print("[Hyper Pure Lag Switch] Loaded successfully without extras!")
 
 end)
+
 -- ============================================
 -- Auto Carry System - Floating Button (Blood Moon)
 -- ============================================
@@ -2495,6 +2529,7 @@ local carryFloatingGui = nil
 -- ============================================
 local AutoCarryToggle = CarrySection:Toggle({
     Title = "Auto Carry",
+    Flag = "AutoCarryToggle",  -- 👈 أضف ده
     Desc = "Automatically carry nearby players",
     Value = false,
     Callback = function(state)
@@ -2515,6 +2550,7 @@ local AutoCarryToggle = CarrySection:Toggle({
 -- ============================================
 CarrySection:Toggle({
     Title = "Show Carry Button",
+    Flag = "CarryFloatingButtonToggle",  -- 👈 أضف ده
     Desc = "Show/hide floating carry button",
     Value = false,
     Callback = function(state)
@@ -2534,6 +2570,7 @@ CarrySection:Toggle({
 -- ============================================
 CarrySection:Input({
     Title = "Carry Button Size",
+    Flag = "CarryButtonSizeInput",  -- 👈 أضف ده
     Desc = "Adjust floating button size (150-400)",
     Placeholder = "190",
     Numeric = true,
@@ -2550,6 +2587,7 @@ CarrySection:Input({
 -- ============================================
 CarrySection:Keybind({
     Title = "Auto Carry Keybind",
+    Flag = "CarryKeybind",  -- 👈 أضف ده
     Mode = "Toggle",
     Default = "F3",
     Callback = function()
@@ -2565,7 +2603,6 @@ CarrySection:Keybind({
         UpdateCarryFloatingButton()
     end
 })
-
 -- ============================================
 -- وظائف Auto Carry
 -- ============================================
