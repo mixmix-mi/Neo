@@ -36,7 +36,6 @@ end)
 
 print("✅ About section loaded in Home tab!")
 
-
 -- ====================================================================
 -- 🦅 HYPER V1.0 - FLY ENGINE & UI MODIFICATION (WINDUI VERSION)
 -- ====================================================================
@@ -79,14 +78,15 @@ pcall(function()
 
     -- تنفيذ الإخفاء فوراً
     HideTimerUI()
+    
     -- ====================================================================
     -- 🦅 ميزة الطيران (Fly System)
     -- ====================================================================
     if not Tabs or not Tabs.Main then return end
     local HomeTab = Tabs.Main
 
-    -- إنشاء القسم
-    local PlayerModSection = Main:Section({
+    -- ✅ التصحيح: استخدم HomeTab بدلاً من Main
+    local PlayerModSection = HomeTab:Section({
         Title = "Fly",
         Side = "Left",
     })
@@ -231,7 +231,8 @@ pcall(function()
             end
         end,
     }) 
-        -- إيقاف الطيران عند الموت أو إزالة الشخصية
+    
+    -- إيقاف الطيران عند الموت أو إزالة الشخصية
     LocalPlayer.CharacterRemoving:Connect(function()
         if flying then
             stopFlying()
@@ -243,15 +244,13 @@ pcall(function()
     end)
 
     -- إعادة تفعيل الطيران تلقائياً بعد الرسبون إذا كان الزرار مفعل
-        -- إعادة تفعيل الطيران تلقائياً بعد الرسبون
     LocalPlayer.CharacterAdded:Connect(function(newChar)
         if flying then
             task.wait(0.5) 
-            stopFlying() -- بنوقف أي حاجة قديمة عشان نتجنب التعليق
+            stopFlying()
             task.wait(0.1)
-            startFlying() -- بنشغل الطيران الجديد
+            startFlying()
             
-            -- نتأكد إن اللوب شغال
             if not flyLoop then
                 flyLoop = RunService.RenderStepped:Connect(function()
                     updateFly()
@@ -259,6 +258,7 @@ pcall(function()
             end
         end
     end)
+end)
 
 -- ============================================
 -- More Features - في تاب Main
