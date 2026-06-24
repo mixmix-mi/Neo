@@ -474,7 +474,7 @@ PerfSection:Button({
 })
 
 -- ============================================
--- Configuration System - WindUI Official
+-- Configuration System - WindUI Official (Full)
 -- ============================================
 
 -- ============================================
@@ -490,229 +490,267 @@ local ConfigSection = SettingsTab:Section({
 -- 2. نظام الكونفج الرسمي من WindUI
 -- ============================================
 
--- الحصول على ConfigManager من النافذة
+-- التحقق من وجود ConfigManager
 local ConfigManager = Window.ConfigManager
-
--- إنشاء كونفج افتراضي
-local myConfig = ConfigManager:CreateConfig("HyperConfig")
-
--- متغير لتخزين اسم الكونفج الحالي
-local currentConfigName = "HyperConfig"
-local configsList = {}
-
--- ============================================
--- 3. دوال تحديث القائمة
--- ============================================
-
--- الحصول على قائمة الكونفجات
-local function GetConfigFiles()
-    local files = {}
-    local allConfigs = ConfigManager:AllConfigs()
-    for _, config in ipairs(allConfigs) do
-        table.insert(files, config)
-    end
-    return files
+if not ConfigManager then
+    warn("[Config] ConfigManager not found!")
+    return
 end
 
--- تحديث القائمة المنسدلة
--- تحديث القائمة المنسدلة (نسخة أوتوماتيك)
-local function RefreshConfigList()
-    configsList = GetConfigFiles()
-    if #configsList == 0 then
-        configsList = {"No Configs"}
-    end
-    if ConfigDropdown then
-        ConfigDropdown:SetValues(configsList)
-    end
-    return configsList
-end
--- الاستخدام
-RefreshConfigList()
+-- متغيرات النظام
+local ConfigName = "HyperConfig"
+local CurrentConfig = nil
+
 -- ============================================
--- 4. واجهة المستخدم
+-- 3. واجهة المستخدم
 -- ============================================
+
+-- Input لإدخال اسم الملف
+local ConfigNameInput = ConfigSection:Input({
+    Title = "Config Name",
+    Icon = "file-cog",
+    Placeholder = "Enter config name...",
+    Value = ConfigName,
+    Callback = function(value)
+        if value and value ~= "" then
+            ConfigName = value
+        end
+    end
+})
+
+ConfigSection:Space()
 
 -- Dropdown لاختيار الملف
-local ConfigDropdown = ConfigSection:Dropdown({
-    Title = "Select Config",
-    Values = {"No Configs"},
-    Default = "No Configs",
+local AllConfigs = ConfigManager:AllConfigs()
+local DefaultValue = table.find(AllConfigs, ConfigName) and ConfigName or nil
+
+local AllConfigsDropdown = ConfigSection:Dropdown({
+    Title = "All Configs",
+    Desc = "Select existing configs",
+    Values = AllConfigs,
+    Value = DefaultValue,
     Callback = function(value)
-        if value ~= "No Configs" then
-            currentConfigName = value
-            myConfig = ConfigManager:CreateConfig(value)
-        end
+        ConfigName = value
+        ConfigNameInput:Set(value)
     end
 })
 
--- تحديث القائمة عند بدء التشغيل
-task.spawn(function()
-    task.wait(0.5)
-    RefreshConfigDropdown(ConfigDropdown)
-end)
+ConfigSection:Space()
 
 -- ============================================
--- 5. أزرار التحكم
+-- 4. أزرار التحكم
 -- ============================================
-
--- زر تحميل الملف
-ConfigSection:Button({
-    Title = "Load Config",
-    Callback = function()
-        if currentConfigName and currentConfigName ~= "No Configs" then
-            local success = pcall(function()
-                myConfig:Load()
-            end)
-            if success then
-                WindUI:Notify({ Title = "Config", Content = "Loaded: " .. currentConfigName, Duration = 2 })
-            else
-                WindUI:Notify({ Title = "Config", Content = "Failed to load", Duration = 2 })
-            end
-        else
-            WindUI:Notify({ Title = "Config", Content = "Select a config first", Duration = 2 })
-        end
-    end
-})
 
 -- زر حفظ الملف
 ConfigSection:Button({
     Title = "Save Config",
+    Icon = "",
+    Justify = "Center",
     Callback = function()
-        if currentConfigName and currentConfigName ~= "No Configs" then
-            local success = pcall(function()
-                myConfig:Save()
-            end)
-            if success then
-                WindUI:Notify({ Title = "Config", Content = "Saved: " .. currentConfigName, Duration = 2 })
-                RefreshConfigDropdown(ConfigDropdown)
+        if ConfigName and ConfigName ~= "" then
+            CurrentConfig = ConfigManager:Config(ConfigName)
+            if CurrentConfig:Save() then
+                WindUI:Notify({
+                    Title = "Config Saved",
+                    Content = "Config '" .. ConfigName .. "' saved",
+                    Icon = "check",
+                    Duration = 2,
+                })
             else
-                WindUI:Notify({ Title = "Config", Content = "Failed to save", Duration = 2 })
+                WindUI:Notify({
+                    Title = "Error",
+                    Content = "Failed to save config",
+                    Duration = 2,
+                })
             end
+            AllConfigsDropdown:Refresh(ConfigManager:AllConfigs())
         else
-            WindUI:Notify({ Title = "Config", Content = "Create a config first", Duration = 2 })
+            WindUI:Notify({
+                Title = "Error",
+                Content = "Enter a config name first",
+                Duration = 2,
+            })
         end
     end
 })
+
+ConfigSection:Space()
+
+-- زر تحميل الملف
+ConfigSection:Button({
+    Title = "Load Config",
+    Icon = "",
+    Justify = "Center",
+    Callback = function()
+        if ConfigName and ConfigName ~= "" then
+            CurrentConfig = ConfigManager:CreateConfig(ConfigName)
+            if CurrentConfig:Load() then
+                WindUI:Notify({
+                    Title = "Config Loaded",
+                    Content = "Config '" .. ConfigName .. "' loaded",
+                    Icon = "refresh-cw",
+                    Duration = 2,
+                })
+            else
+                WindUI:Notify({
+                    Title = "Error",
+                    Content = "Failed to load config",
+                    Duration = 2,
+                })
+            end
+        else
+            WindUI:Notify({
+                Title = "Error",
+                Content = "Enter a config name first",
+                Duration = 2,
+            })
+        end
+    end
+})
+
+ConfigSection:Space()
 
 -- زر حذف الملف
 ConfigSection:Button({
     Title = "Delete Config",
+    Icon = "",
+    Justify = "Center",
     Callback = function()
-        if currentConfigName and currentConfigName ~= "No Configs" then
-            local success = pcall(function()
-                myConfig:Delete()
-            end)
-            if success then
-                WindUI:Notify({ Title = "Config", Content = "Deleted: " .. currentConfigName, Duration = 2 })
-                currentConfigName = "No Configs"
-                RefreshConfigDropdown(ConfigDropdown)
-                ConfigDropdown:SetValue("No Configs")
+        if ConfigName and ConfigName ~= "" then
+            CurrentConfig = ConfigManager:CreateConfig(ConfigName)
+            if CurrentConfig:Delete() then
+                WindUI:Notify({
+                    Title = "Config Deleted",
+                    Content = "Config '" .. ConfigName .. "' deleted",
+                    Icon = "trash-2",
+                    Duration = 2,
+                })
+                AllConfigsDropdown:Refresh(ConfigManager:AllConfigs())
+                ConfigName = ""
+                ConfigNameInput:Set("")
             else
-                WindUI:Notify({ Title = "Config", Content = "Failed to delete", Duration = 2 })
+                WindUI:Notify({
+                    Title = "Error",
+                    Content = "Failed to delete config",
+                    Duration = 2,
+                })
             end
         else
-            WindUI:Notify({ Title = "Config", Content = "Select a config first", Duration = 2 })
+            WindUI:Notify({
+                Title = "Error",
+                Content = "Select a config first",
+                Duration = 2,
+            })
         end
     end
 })
 
--- ============================================
--- 6. إنشاء كونفج جديد
--- ============================================
-
--- Input لإدخال اسم الملف
-ConfigSection:Input({
-    Title = "Config Name",
-    Placeholder = "Enter config name...",
-    Callback = function(value)
-        if value and value ~= "" then
-            currentConfigName = value
-        end
-    end
-})
+ConfigSection:Space()
 
 -- زر إنشاء ملف جديد
 ConfigSection:Button({
     Title = "Create Config",
+    Icon = "",
+    Justify = "Center",
     Callback = function()
-        if currentConfigName and currentConfigName ~= "" and currentConfigName ~= "No Configs" then
-            myConfig = ConfigManager:CreateConfig(currentConfigName)
-            local success = pcall(function()
-                myConfig:Save()
-            end)
-            if success then
-                WindUI:Notify({ Title = "Config", Content = "Created: " .. currentConfigName, Duration = 2 })
-                RefreshConfigDropdown(ConfigDropdown)
-                ConfigDropdown:SetValue(currentConfigName)
+        if ConfigName and ConfigName ~= "" then
+            CurrentConfig = ConfigManager:CreateConfig(ConfigName)
+            if CurrentConfig:Save() then
+                WindUI:Notify({
+                    Title = "Config Created",
+                    Content = "Config '" .. ConfigName .. "' created",
+                    Icon = "plus",
+                    Duration = 2,
+                })
+                AllConfigsDropdown:Refresh(ConfigManager:AllConfigs())
+                AllConfigsDropdown:SetValue(ConfigName)
             else
-                WindUI:Notify({ Title = "Config", Content = "Failed to create", Duration = 2 })
+                WindUI:Notify({
+                    Title = "Error",
+                    Content = "Failed to create config",
+                    Duration = 2,
+                })
             end
         else
-            WindUI:Notify({ Title = "Config", Content = "Enter a config name", Duration = 2 })
+            WindUI:Notify({
+                Title = "Error",
+                Content = "Enter a config name first",
+                Duration = 2,
+            })
         end
     end
 })
 
--- ============================================
--- 7. زر تحديث القائمة
--- ============================================
+ConfigSection:Space()
+
+-- زر تحديث القائمة
 ConfigSection:Button({
     Title = "Refresh List",
+    Icon = "",
+    Justify = "Center",
     Callback = function()
-        RefreshConfigDropdown(ConfigDropdown)
-        WindUI:Notify({ Title = "Config", Content = "List refreshed", Duration = 2 })
+        AllConfigsDropdown:Refresh(ConfigManager:AllConfigs())
+        WindUI:Notify({
+            Title = "Refreshed",
+            Content = "Config list refreshed",
+            Duration = 2,
+        })
+    end
+})
+
+ConfigSection:Space()
+
+-- زر طباعة الكونفجات
+ConfigSection:Button({
+    Title = "Print All Configs",
+    Icon = "",
+    Justify = "Center",
+    Callback = function()
+        local all = ConfigManager:AllConfigs()
+        print("[Config] All configs:")
+        for i, name in ipairs(all) do
+            print("  " .. i .. ". " .. name)
+        end
+        WindUI:Notify({
+            Title = "Printed",
+            Content = "Check console for config list",
+            Duration = 2,
+        })
     end
 })
 
 -- ============================================
--- 8. تسجيل العناصر في الكونفج
--- ============================================
-
--- ✅ تسجيل التوجلات والإعدادات تلقائياً
--- أي عنصر بيه Flag = "اسم" هيتسجل تلقائياً في الكونفج
-
--- مثال: تسجيل Toggle
--- Tabs.Misc:Toggle({
---     Title = "Example",
---     Flag = "exampleToggle",  -- <- ده هيتسجل تلقائياً
---     Value = false,
--- })
-
--- مثال: تسجيل Slider
--- Tabs.Misc:Slider({
---     Title = "Example Slider",
---     Flag = "exampleSlider",  -- <- ده هيتسجل تلقائياً
---     Value = { Min = 1, Max = 100, Default = 50 },
--- })
-
--- ============================================
--- 9. Auto Load عند بدء التشغيل
+-- 5. Auto Load عند بدء التشغيل
 -- ============================================
 local function AutoLoadConfig()
-    local configs = GetConfigFiles()
+    local configs = ConfigManager:AllConfigs()
     if #configs > 0 then
-        -- تحميل أول كونفج موجود
         local firstConfig = configs[1]
-        currentConfigName = firstConfig
-        myConfig = ConfigManager:CreateConfig(firstConfig)
+        ConfigName = firstConfig
+        ConfigNameInput:Set(firstConfig)
+        CurrentConfig = ConfigManager:CreateConfig(firstConfig)
         local success = pcall(function()
-            myConfig:Load()
+            CurrentConfig:Load()
         end)
         if success then
-            ConfigDropdown:SetValue(firstConfig)
+            AllConfigsDropdown:SetValue(firstConfig)
             print("[Config] Auto-loaded: " .. firstConfig)
+            WindUI:Notify({
+                Title = "Auto Load",
+                Content = "Config '" .. firstConfig .. "' loaded",
+                Duration = 2,
+            })
         end
     end
 end
 
--- تشغيل التحميل التلقائي
 task.spawn(function()
     task.wait(1)
     AutoLoadConfig()
 end)
 
 -- ============================================
--- 10. إشعار التحميل
+-- 6. إشعار التحميل
 -- ============================================
 print("[Config System] Loaded successfully using WindUI Official ConfigManager!")
 -- ============================================
