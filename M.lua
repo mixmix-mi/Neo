@@ -1144,7 +1144,6 @@ end
 LoadInfiniteSlide()
 
 
-
 -- ================================
 -- AutoTrimp & BackTrimp (Blood Moon Style)
 -- ================================
@@ -1178,6 +1177,7 @@ local activeBV = nil
 local currentSpeed = getgenv().AutoTrimpSpeed
 local countingEnabled = false
 local speedometer = nil
+local speedometerConnection = nil
 local autoTrimpGUI = nil
 local backTrimpGUI = nil
 local debugTimer = 0
@@ -1192,6 +1192,45 @@ local function getSpeedometer()
     end)
     if ok then return spd end
     return nil
+end
+
+-- ================================
+-- دالة Force Update Speedometer (منع اللعبة من تغييره)
+-- ================================
+local function ForceUpdateSpeedometer()
+    if not speedometer then
+        speedometer = getSpeedometer()
+        if not speedometer then return end
+    end
+    
+    -- ✅ تحديث النص مباشرة
+    local displaySpeed = truncate1Decimal(currentSpeed)
+    if speedometer.Text ~= tostring(displaySpeed) then
+        speedometer.Text = tostring(displaySpeed)
+    end
+end
+
+-- ================================
+-- Hook على PropertyChanged لمنع اللعبة من إعادة ضبط السرعة
+-- ================================
+local function SetupSpeedometerHook()
+    speedometer = getSpeedometer()
+    if not speedometer then return end
+    
+    -- إزالة الـ Connection القديم لو موجود
+    if speedometerConnection then
+        speedometerConnection:Disconnect()
+        speedometerConnection = nil
+    end
+    
+    -- ✅ Hook على تغيير النص
+    speedometerConnection = speedometer:GetPropertyChangedSignal("Text"):Connect(function()
+        -- لو اللعبة حاولت تغير النص لـ 0 أو قيمة أقل من السرعة الحالية
+        local currentText = tonumber(speedometer.Text) or 0
+        if currentText < currentSpeed - 1 or currentText == 0 then
+            ForceUpdateSpeedometer()
+        end
+    end)
 end
 
 -- ================================
@@ -1265,7 +1304,7 @@ local function CreateAutoTrimpGUI()
             airTotalTime = 0
             currentSpeed = getgenv().AutoTrimpSpeed
             countingEnabled = false
-            if speedometer then pcall(function() speedometer.Text = "0" end) end
+            ForceUpdateSpeedometer()
         end
     end)
 
@@ -1430,13 +1469,21 @@ RunService.RenderStepped:Connect(function()
         local root = char:FindFirstChild("HumanoidRootPart")
         local humanoid = char:FindFirstChild("Humanoid")
         if root and humanoid then
-            speedometer = getSpeedometer()
+            -- تحديث مرجع الـ Speedometer
+            if not speedometer or not speedometer.Parent then
+                speedometer = getSpeedometer()
+                if speedometer then
+                    SetupSpeedometerHook()
+                end
+            end
+            
             local isAir = humanoid.FloorMaterial == Enum.Material.Air
 
             -- ✅ عند الهبوط: نحتفظ بالسرعة ولا نرجعها للقيمة الأساسية
             if wasAir and not isAir then
-                -- نحتفظ بالسرعة الحالية ولا نرجعها لـ 50
-                if speedometer then speedometer.Text = tostring(truncate1Decimal(currentSpeed)) end
+                if speedometer then
+                    ForceUpdateSpeedometer()
+                end
                 airTotalTime = 0
                 DebugPrint("Landed on ground - Speed retained: " .. truncate1Decimal(currentSpeed))
             end
@@ -1449,7 +1496,6 @@ RunService.RenderStepped:Connect(function()
                     airTotalTime = airTotalTime + deltaTime
                     
                     if getgenv().AutoTrimpMode == "Incremental" then
-                        -- ✅ وضع التدريج (السرعة بتزيد حسب المعدل المضبوط)
                         local incrementAmount = getgenv().AutoTrimpIncrementRate * deltaTime
                         currentSpeed = currentSpeed + incrementAmount
                         airAccumulator = 0
@@ -1458,12 +1504,10 @@ RunService.RenderStepped:Connect(function()
                                   " | Increment Rate: " .. getgenv().AutoTrimpIncrementRate .. 
                                   " | Air Time: " .. truncate1Decimal(airTotalTime))
                     else
-                        -- ✅ وضع الثابت (السرعة ثابتة على Speed Input)
                         currentSpeed = getgenv().AutoTrimpSpeed
                     end
                 else
                     airAccumulator = 0
-                    -- ✅ على الأرض: نحتفظ بالسرعة الحالية
                     if getgenv().AutoTrimpMode == "Constant" then
                         currentSpeed = getgenv().AutoTrimpSpeed
                     end
@@ -1478,7 +1522,6 @@ RunService.RenderStepped:Connect(function()
                     lookDir = lookDir.Unit
                 end
 
-                -- BackTrimp (عكس الاتجاه) - يشتغل لوحده
                 if getgenv().BackTrimpEnabled then
                     lookDir = -lookDir
                 end
@@ -1492,7 +1535,11 @@ RunService.RenderStepped:Connect(function()
                 activeBV = bv
 
                 countingEnabled = true
-                if speedometer then speedometer.Text = tostring(truncate1Decimal(currentSpeed)) end
+                
+                -- ✅ تحديث الـ Speedometer
+                if speedometer then
+                    ForceUpdateSpeedometer()
+                end
             else
                 if activeBV then activeBV:Destroy() end
                 activeBV = nil
@@ -1503,6 +1550,11 @@ RunService.RenderStepped:Connect(function()
                 airAccumulator = 0
                 airTotalTime = 0
                 wasAir = false
+                
+                -- ✅ تحديث الـ Speedometer عند الإيقاف
+                if speedometer then
+                    ForceUpdateSpeedometer()
+                end
             end
         end
     end
@@ -1513,6 +1565,39 @@ RunService.RenderStepped:Connect(function()
         DebugPrint("Current Speed: " .. truncate1Decimal(currentSpeed) .. 
                   " | Mode: " .. getgenv().AutoTrimpMode .. 
                   " | Increment Rate: " .. getgenv().AutoTrimpIncrementRate)
+    end
+end)
+
+-- ================================
+-- محاولة إعداد الـ Hook فوراً بعد التحميل
+-- ================================
+task.spawn(function()
+    task.wait(1)
+    speedometer = getSpeedometer()
+    if speedometer then
+        SetupSpeedometerHook()
+        DebugPrint("Speedometer hook setup successfully!")
+    else
+        DebugPrint("Speedometer not found, will retry...")
+        -- محاولة مرة أخرى بعد 3 ثواني
+        task.wait(3)
+        speedometer = getSpeedometer()
+        if speedometer then
+            SetupSpeedometerHook()
+            DebugPrint("Speedometer hook setup successfully on retry!")
+        end
+    end
+end)
+
+-- ================================
+-- إعادة المحاولة عند إعادة الظهور
+-- ================================
+LP.CharacterAdded:Connect(function()
+    task.wait(2)
+    speedometer = getSpeedometer()
+    if speedometer then
+        SetupSpeedometerHook()
+        DebugPrint("Speedometer hook re-established after respawn!")
     end
 end)
 
@@ -1541,7 +1626,7 @@ if MiscTab then
                 airTotalTime = 0
                 currentSpeed = getgenv().AutoTrimpSpeed
                 countingEnabled = false
-                if speedometer then pcall(function() speedometer.Text = "0" end) end
+                ForceUpdateSpeedometer()
             end
             if WindUI and WindUI.Notify then
                 WindUI:Notify({
@@ -1573,7 +1658,7 @@ if MiscTab then
                 airTotalTime = 0
                 currentSpeed = getgenv().AutoTrimpSpeed
                 countingEnabled = false
-                if speedometer then pcall(function() speedometer.Text = "0" end) end
+                ForceUpdateSpeedometer()
             end
             if WindUI and WindUI.Notify then
                 WindUI:Notify({
@@ -1606,7 +1691,7 @@ if MiscTab then
         end
     })
 
-    -- ✅ Input جديد للتحكم في سرعة الزيادة (Increment Rate)
+    -- Input للتحكم في سرعة الزيادة (Increment Rate)
     AutoTrimpSection:Input({
         Title = "Increment Rate",
         Flag = "AutoTrimpIncrementRateInput",
@@ -1693,6 +1778,7 @@ if MiscTab then
         Title = "Reset Speed",
         Callback = function()
             currentSpeed = getgenv().AutoTrimpSpeed
+            ForceUpdateSpeedometer()
             if WindUI and WindUI.Notify then
                 WindUI:Notify({
                     Title = "AutoTrimp",
@@ -1705,6 +1791,7 @@ if MiscTab then
 end
 
 print("[AutoTrimp & BackTrimp] Loaded successfully!")
+
 
 -- Auto Jump System v2 - WindUI Version
 -- ============================================
