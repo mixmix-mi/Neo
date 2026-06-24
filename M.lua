@@ -282,7 +282,7 @@ Section:Dropdown({
     end,
 })
 
-Section:Space()
+
 
 local Section = Tabs.Misc:Section({ 
     Title = "Emote modifications",
@@ -368,7 +368,7 @@ Tabs.Misc:Button({
     end
 })
 
-MainTab:Space()
+
 -- ============================================
 -- INFINITE SLIDE MODULE
 -- مع حماية Errors
