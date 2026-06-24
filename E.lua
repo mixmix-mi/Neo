@@ -233,10 +233,10 @@ end
 -- ================================
 -- عناصر التحكم في الواجهة
 -- ================================
-
 -- Toggle ESP
 PlayerESPSection:Toggle({
     Title = "ESP Players",
+    Flag = "PlayerESP",  -- 👈 أضف ده
     Desc = "Display player names with distance and status",
     Value = false,
     Callback = function(state)
@@ -261,6 +261,7 @@ PlayerESPSection:Toggle({
 -- لون ESP العادي (أبيض)
 PlayerESPSection:Dropdown({
     Title = "Normal Color",
+    Flag = "NormalColorDropdown",  -- 👈 أضف ده
     Values = { "White", "Blood Red", "Ocean Deep", "Red", "Green", "Blue", "Yellow", "Cyan", "Purple" },
     Default = "White",
     Callback = function(value)
@@ -288,6 +289,7 @@ PlayerESPSection:Dropdown({
 -- لون ESP للميتين (أحمر)
 PlayerESPSection:Dropdown({
     Title = "Downed Color",
+    Flag = "DownedColorDropdown",  -- 👈 أضف ده
     Values = { "Red", "Blood Red", "Golden Orange", "Ocean Deep", "White", "Green", "Blue", "Yellow", "Cyan", "Purple" },
     Default = "Red",
     Callback = function(value)
@@ -313,7 +315,7 @@ PlayerESPSection:Dropdown({
     end,
 })
 
--- زر Refresh
+-- زر Refresh (Button مش محتاج Flag)
 PlayerESPSection:Button({
     Title = "Refresh ESP",
     Desc = "Manually refresh all player ESP",
@@ -331,6 +333,7 @@ PlayerESPSection:Button({
 -- Toggle Highlight
 PlayerESPSection:Toggle({
     Title = "Player Highlight",
+    Flag = "PlayerHighlight",  -- 👈 أضف ده
     Desc = "Highlight players with colors",
     Value = false,
     Callback = function(state)
@@ -351,6 +354,7 @@ PlayerESPSection:Toggle({
         end
     end,
 })
+
 -- ============================================
 -- 🛠️ Services & Player Definition
 -- ============================================
@@ -720,9 +724,9 @@ end
 -- عناصر التحكم (بنفسجي)
 -- ================================
 
--- Toggle Nextbot ESP
 NextbotSection:Toggle({
     Title = "Nextbot ESP",
+    Flag = "NextbotESP",  -- 👈 أضف ده
     Desc = "Display Nextbot names with distance (Purple Theme)",
     Value = false,
     Callback = function(state)
@@ -739,6 +743,7 @@ NextbotSection:Toggle({
 -- Toggle Nextbot Highlight
 NextbotSection:Toggle({
     Title = "Nextbot Highlight",
+    Flag = "NextbotHighlight",  -- 👈 أضف ده
     Desc = "Highlight Nextbots with Purple color",
     Value = false,
     Callback = function(state)
@@ -755,6 +760,7 @@ NextbotSection:Toggle({
 -- لون ESP للـ Nextbots (بنفسجي)
 NextbotSection:Dropdown({
     Title = "Nextbot ESP Color",
+    Flag = "NextbotESPColorDropdown",  -- 👈 أضف ده
     Values = { "Purple Neon", "Purple", "Red", "Green", "Blue", "Yellow", "Cyan", "White" },
     Default = "Purple Neon",
     Callback = function(value)
@@ -783,6 +789,7 @@ NextbotSection:Dropdown({
 -- لون Highlight للـ Nextbots (بنفسجي)
 NextbotSection:Dropdown({
     Title = "Nextbot Highlight Color",
+    Flag = "NextbotHighlightColorDropdown",  -- 👈 أضف ده
     Values = { "Purple Dark", "Purple", "Red", "Green", "Blue", "Yellow", "Cyan", "White" },
     Default = "Purple Dark",
     Callback = function(value)
@@ -807,6 +814,7 @@ NextbotSection:Dropdown({
         end
     end,
 })
+
 -- ================================
 -- تنظيف عند إعادة الظهور
 -- ================================
