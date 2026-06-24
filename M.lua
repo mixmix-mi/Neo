@@ -1559,14 +1559,13 @@ RunService.RenderStepped:Connect(function()
         end
     end
     
-    -- طباعة التصحيح كل 5 ثواني
-    if debugTimer >= 5 then
-        debugTimer = 0
-        DebugPrint("Current Speed: " .. truncate1Decimal(currentSpeed) .. 
-                  " | Mode: " .. getgenv().AutoTrimpMode .. 
-                  " | Increment Rate: " .. getgenv().AutoTrimpIncrementRate)
-    end
-end)
+-- طباعة التصحيح كل 5 ثواني
+if debugTimer >= 1 then
+    debugTimer = 0
+    DebugPrint("Current Speed: " .. truncate1Decimal(currentSpeed) .. 
+              " | Mode: " .. getgenv().AutoTrimpMode .. 
+              " | Increment Rate: " .. getgenv().AutoTrimpIncrementRate)
+end
 
 -- ================================
 -- محاولة إعداد الـ Hook فوراً بعد التحميل
