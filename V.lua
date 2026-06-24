@@ -353,11 +353,6 @@ VIPSections:Button({
 
 print("VIP Tools loaded successfully!")
 
--- ================================
--- Visuals Tab (في VIP Tab)
--- ================================
-
--- البحث عن تبويب VIP أو إنشاؤه
 
 
 -- ================================
@@ -376,7 +371,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local player = Players.LocalPlayer
 
-local HEADLESS_MESH_ID = "rbxassetid://1095708"
+local HEADLESS_MESH_ID = "rbxassetid://134082579"
 local KORBLOX_MESH_ID = "rbxassetid://101851696"
 local KORBLOX_COLOR = Color3.fromRGB(50, 50, 50)
 
