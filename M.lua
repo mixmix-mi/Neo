@@ -1422,7 +1422,8 @@ RunService.RenderStepped:Connect(function()
             local isAir = humanoid.FloorMaterial == Enum.Material.Air
 
             if wasAir and not isAir then
-                currentSpeed = math.max(getgenv().AutoTrimpSpeed - minSpeedOffset, currentSpeed - 10)
+                -- ✅ عند الهبوط: إعادة ضبط السرعة للقيمة الأساسية
+                currentSpeed = getgenv().AutoTrimpSpeed
                 if speedometer then speedometer.Text = tostring(truncate1Decimal(currentSpeed)) end
                 airTotalTime = 0
             end
@@ -1446,7 +1447,8 @@ RunService.RenderStepped:Connect(function()
                     end
                 else
                     airAccumulator = 0
-                    currentSpeed = math.max(getgenv().AutoTrimpSpeed - minSpeedOffset, currentSpeed - 2.5 * deltaTime)
+                    -- ✅ على الأرض: السرعة ترجع للقيمة الأساسية
+                    currentSpeed = getgenv().AutoTrimpSpeed
                     airTotalTime = 0
                 end
 
@@ -1652,7 +1654,6 @@ if MiscTab then
 end
 
 print("[AutoTrimp & BackTrimp] Loaded successfully!")
-
 -- Auto Jump System v2 - WindUI Version
 -- ============================================
 pcall(function()
