@@ -21,8 +21,11 @@ if not Tabs.Misc then
     Tabs.Misc = Window:Tab({ Title = "Misc", Icon = "solar:box-minimalistic-outline", Locked = false })
 end
 
-local Section = Main:Section({ 
+-- ✅ التصحيح: استخدم Tabs.Misc بدلاً من Main
+local Section = Tabs.Misc:Section({ 
     Title = "Player modifications",
+    Side = "Left",        -- يمكنك إضافة هذا
+    Collapsed = false,    -- وهذا اختياري
 })
 local requiredFields = {
     Friction = true,
