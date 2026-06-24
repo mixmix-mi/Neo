@@ -24,13 +24,12 @@ local LP = Players.LocalPlayer
 -- إنشاء التبويب الرئيسي
 -- ============================================
 
-
--- ✅ التصحيح: استخدم Tabs.Misc بدلاً من Main
 local Section = Tabs.Misc:Section({ 
     Title = "Player modifications",
-    Side = "Left",        -- يمكنك إضافة هذا
-    Collapsed = true,    -- وهذا اختياري
+    Side = "Left",
+    Collapsed = true,
 })
+
 local requiredFields = {
     Friction = true,
     AirStrafeAcceleration = true,
@@ -238,10 +237,9 @@ local function createValidatedInput(config)
     end
 end
 
-local speed = MainTab:Input({
-    Title = " Speed",
-
-    Placeholder = " 1500",
+local speed = Section:Input({
+    Title = "Speed",
+    Placeholder = "1500",
     Value = "1500",
     Callback = createValidatedInput({
         field = "Speed",
@@ -250,10 +248,9 @@ local speed = MainTab:Input({
     })
 })
 
-local jumpc = MainTab:Input({
+local jumpc = Section:Input({
     Title = "Jump Cap",
-
-    Placeholder = " 1",
+    Placeholder = "1",
     Value = "1",
     Callback = createValidatedInput({
         field = "JumpCap",
@@ -262,9 +259,8 @@ local jumpc = MainTab:Input({
     })
 })
 
-local strafes = MainTab:Input({
+local strafes = Section:Input({
     Title = "Strafe speed",
- 
     Placeholder = "187",
     Value = "187",
     Callback = createValidatedInput({
@@ -274,9 +270,9 @@ local strafes = MainTab:Input({
     })
 })
 
-MainTab:Dropdown({
+Section:Dropdown({
     Title = "Select Apply Method",
-    Values = {"Unoptimized", "Optimized" },
+    Values = {"Unoptimized", "Optimized"},
     Multi = false,
     Default = "Unoptimized",
     Callback = function(value)
@@ -285,119 +281,34 @@ MainTab:Dropdown({
 })
 
 
-
-local Section = MainTab:Section({ 
-    Title = "Emote modifications",
+-- ================================
+-- Yourself
+-- ================================
+local YourselfSection = Tabs.Misc:Section({ 
+    Title = "Yourself",
+    Side = "Left",
+    Collapsed = true,
 })
 
--- salva velocidades originais
-local originalEmoteSpeeds = {}
-local itemsFolder = game:GetService("ReplicatedStorage"):FindFirstChild("Items")
-if itemsFolder then
-    local emotesFolder = itemsFolder:FindFirstChild("Emotes")
-    if emotesFolder then
-        for _, module in ipairs(emotesFolder:GetChildren()) do
-            if module:IsA("ModuleScript") then
-                local ok, data = pcall(require, module)
-                if ok and data and data.EmoteInfo then
-                    originalEmoteSpeeds[module.Name] = data.EmoteInfo.SpeedMult
-                end
-            end
-        end
-    end
-end
-
--- define velocidade para todos os emotes
-local function applyEmoteSpeed(v)
-    if not itemsFolder then return end
-    local emotesFolder = itemsFolder:FindFirstChild("Emotes")
-    if not emotesFolder then return end
-    
-    for _, module in ipairs(emotesFolder:GetChildren()) do
-        if module:IsA("ModuleScript") then
-            local ok, data = pcall(require, module)
-            if ok and data and data.EmoteInfo and data.EmoteInfo.SpeedMult ~= 0 then
-                data.EmoteInfo.SpeedMult = v
-            end
-        end
-    end
-end
-
--- restaura velocidades originais
-local function restoreOriginal()
-    if not itemsFolder then return end
-    local emotesFolder = itemsFolder:FindFirstChild("Emotes")
-    if not emotesFolder then return end
-    
-    for _, module in ipairs(emotesFolder:GetChildren()) do
-        if module:IsA("ModuleScript") then
-            local original = originalEmoteSpeeds[module.Name]
-            if original then
-                local ok, data = pcall(require, module)
-                if ok and data and data.EmoteInfo then
-                    data.EmoteInfo.SpeedMult = original
-                end
-            end
-        end
-    end
-end
-
--- valor atual usado no modo legit
-featureStates = featureStates or {}
-featureStates.EmoteSpeedValue = 2
-
--- INPUT DE VELOCIDADE
-local emotespeed = MainTab:Input({
-    Title = "Emote Speed Value",
-    Description = "Changes the animation speed of your emotes",
-    Placeholder = "1500",
-    NumbersOnly = true,
-    Callback = function(value)
-        local num = tonumber(value)
-        if not num or num <= 0 then return end
-
-        featureStates.EmoteSpeedValue = num
-        local applied = num / 1000
-        applyEmoteSpeed(applied)   -- modo sempre legit
-    end
-})
-
--- RESET
-MainTab:Button({
-    Title = "Reset Emote Speed",
-    Description = "Restore default emote speed",
-    Callback = function()
-        restoreOriginal()
-    end
-})
-
-
-
--- Detecta Remote ChangePlayerMode
 local EventsFolder = ReplicatedStorage:WaitForChild("Events"):WaitForChild("Player")
 local ChangePlayerMode = EventsFolder:WaitForChild("ChangePlayerMode")
+
 if ChangePlayerMode and ChangePlayerMode:IsA("RemoteEvent") then
-	ChangePlayerMode.OnClientEvent:Connect(function()
-		task.wait(0.1)
-		restartInfiniteSlide()
-	end)
+    ChangePlayerMode.OnClientEvent:Connect(function()
+        task.wait(0.1)
+    end)
 end
 
-
--- Serviços
 local Players = game:GetService("Players")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local player = Players.LocalPlayer    
+local player = Players.LocalPlayer
 
--- Estados das features
-local featureStates = { AutoSelfRevive = false, SelfReviveMethod = "Spawnpoint" }    
+local featureStates = { AutoSelfRevive = false, SelfReviveMethod = "Spawnpoint" }
 
 local lastSavedPosition = nil
 local AutoSelfReviveConnection = nil
 local respawnConnection = nil
-local hasRevived = false    
+local hasRevived = false
 
--- Função de revive
 local function doRevive(char)
     if not char then return end
     local hrp = char:FindFirstChild("HumanoidRootPart")
@@ -439,66 +350,58 @@ local function doRevive(char)
                 end
             end
         end)
-    end    
-end    
+    end
+end
 
--- Setup AutoRevive
 local function setupAutoRevive(char)
     if AutoSelfReviveConnection then AutoSelfReviveConnection:Disconnect() end
     AutoSelfReviveConnection = char:GetAttributeChangedSignal("Downed"):Connect(function()
         if char:GetAttribute("Downed") then doRevive(char) end
     end)
-end    
+end
 
--- Monitor respawn
 if respawnConnection then respawnConnection:Disconnect() end
 respawnConnection = player.CharacterAdded:Connect(function(newChar)
     task.wait(1)
     if featureStates.AutoSelfRevive then setupAutoRevive(newChar) end
-end)    
+end)
 
-
-
-
-local Section = MainTab:Section({ 
-    Title = "Yourself",
-})
-
-
--- Dropdown SelfReviveMethod
-MainTab:Dropdown({
+YourselfSection:Dropdown({
     Title = "Respawn Method",
     Values = {"Spawnpoint", "Revive"},
-    Value = "Spawnpoint",
+    Default = "Spawnpoint",
     Callback = function(value)
         featureStates.SelfReviveMethod = value
     end
-})    
+})
 
--- Botão Manual Revive
-MainTab:Button({
+YourselfSection:Button({
     Title = "Respawn",
     Callback = function()
         doRevive(player.Character)
     end
-})    
+})
 
--- Inicializa AutoSelfRevive caso já esteja ativo
 if player.Character and featureStates.AutoSelfRevive then
     setupAutoRevive(player.Character)
 end
--- Serviços
-local Players = game:GetService("Players")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+-- ================================
+-- Interactions (Auto Carry & Auto Revive)
+-- ================================
+local InteractionsSection = Tabs.Misc:Section({ 
+    Title = "Interactions",
+    Side = "Left",
+    Collapsed = true,
+})
+
 local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
-
 local INTERACT_REMOTE = ReplicatedStorage:WaitForChild("Events"):WaitForChild("Character"):WaitForChild("Interact")
 
--- Variáveis globais
 getgenv().AutoCarryEnabled = false
 getgenv().AutoReviveEnabled = false
 getgenv().AutoCarryDelay = 0.1
@@ -509,103 +412,248 @@ getgenv().AutoRevivePosition = UDim2.new(0.5, -110, 0, 120)
 local lastCarryTime = 0
 local lastReviveTime = 0
 
--- Função genérica para criar GUI flutuante estilo AutoTrimp
-local function CreateFloatingButton(name, enabledFlag, savedPosFlag, defaultPosY)
-    if PlayerGui:FindFirstChild(name.."GUI") then
-        PlayerGui[name.."GUI"]:Destroy()
-    end
+-- ================================
+-- إنشاء الأزرار العائمة (Blood Moon Style)
+-- ================================
 
+-- 1. Auto Carry Button
+local function CreateCarryFloatingButton()
+    local CoreGui = game:GetService("CoreGui")
+    
+    local oldGui = CoreGui:FindFirstChild("CarryFloatingButton")
+    if oldGui then oldGui:Destroy() end
+    
     local screenGui = Instance.new("ScreenGui")
-    screenGui.Name = name.."GUI"
+    screenGui.Name = "CarryFloatingButton"
     screenGui.ResetOnSpawn = false
-    screenGui.Parent = PlayerGui
-
-    local Container = Instance.new("Frame")
-    Container.Size = UDim2.new(0, 220, 0, 44)
-    Container.Position = getgenv()[savedPosFlag] or UDim2.new(0.5, -110, 0, defaultPosY)
-    Container.AnchorPoint = Vector2.new(0.5,0)
-    Container.BackgroundTransparency = 1
-    Container.Parent = screenGui
-
-    local Button = Instance.new("TextButton")
-    Button.Size = UDim2.new(1,0,1,0)
-    Button.BackgroundColor3 = Color3.fromRGB(0,0,0)
-    Button.BackgroundTransparency = 0.25
-    Button.Text = name.." [OFF]"
-    Button.Font = Enum.Font.Gotham
-    Button.TextSize = 20
-    Button.TextColor3 = Color3.fromRGB(255,255,255)
-    Button.AutoButtonColor = false
-    Button.Parent = Container
-
-    local UICorner = Instance.new("UICorner", Button)
-    UICorner.CornerRadius = UDim.new(1,0)
-    local UIStroke = Instance.new("UIStroke", Button)
-    UIStroke.Thickness = 2
-    local UIGradient = Instance.new("UIGradient", UIStroke)
-    UIGradient.Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0, Color3.fromHex("40c9ff")),
-        ColorSequenceKeypoint.new(1, Color3.fromHex("e81cff"))
-    })
-    UIGradient.Rotation = 45
-
-    -- Hover Tween
-    Button.MouseEnter:Connect(function()
-        TweenService:Create(Button, TweenInfo.new(0.1), {BackgroundTransparency = 0.1}):Play()
-    end)
-    Button.MouseLeave:Connect(function()
-        TweenService:Create(Button, TweenInfo.new(0.1), {BackgroundTransparency = 0.25}):Play()
-    end)
-
-    -- Toggle da função
-    Button.MouseButton1Click:Connect(function()
-        getgenv()[enabledFlag] = not getgenv()[enabledFlag]
-        Button.Text = name.." ["..(getgenv()[enabledFlag] and "ON" or "OFF").."]"
-    end)
-
-    -- Drag
-    local dragging, dragInput, dragStart, startPos = false, nil, Vector2.new(), Container.Position
-    local function update(input)
-        local delta = input.Position - dragStart
-        Container.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-    end
-
-    Button.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+    screenGui.Parent = CoreGui
+    
+    local button = Instance.new("TextButton")
+    button.Size = UDim2.new(0, 160, 0, 55)
+    local startX = (workspace.CurrentCamera.ViewportSize.X / 2) - 80
+    local startY = (workspace.CurrentCamera.ViewportSize.Y / 2) - 27
+    button.Position = UDim2.new(0, startX, 0, startY)
+    button.Text = "CARRY: OFF"
+    
+    -- Blood Moon Colors
+    button.BackgroundColor3 = Color3.fromHex("#1a0000")
+    button.TextColor3 = Color3.fromHex("#ffcccc")
+    button.Font = Enum.Font.GothamBold
+    button.TextSize = 14
+    button.AutoButtonColor = false
+    button.Parent = screenGui
+    
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0.2, 0)
+    corner.Parent = button
+    
+    local stroke = Instance.new("UIStroke")
+    stroke.Color = Color3.fromHex("#660000")
+    stroke.Thickness = 2
+    stroke.Parent = button
+    
+    local dragging = false
+    local dragStart, startPos
+    
+    button.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
             dragging = true
-            dragInput = input
             dragStart = input.Position
-            startPos = Container.Position
-            input.Changed:Connect(function()
-                if input.UserInputState == Enum.UserInputState.End then
-                    dragging = false
-                    getgenv()[savedPosFlag] = Container.Position
-                end
-            end)
+            startPos = button.Position
+            stroke.Color = Color3.fromHex("#ff4444")
+            button.Text = "DRAG..."
         end
     end)
-
-    Button.InputChanged:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-            dragInput = input
+    
+    button.InputChanged:Connect(function(input)
+        if dragging and (input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseMovement) then
+            local delta = input.Position - dragStart
+            button.Position = UDim2.new(0, startPos.X.Offset + delta.X, 0, startPos.Y.Offset + delta.Y)
         end
     end)
-
-    UserInputService.InputChanged:Connect(function(input)
-        if dragging and input == dragInput then
-            update(input)
+    
+    button.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = false
+            stroke.Color = getgenv().AutoCarryEnabled and Color3.fromHex("#ff4444") or Color3.fromHex("#660000")
+            button.Text = getgenv().AutoCarryEnabled and "CARRY: ON" or "CARRY: OFF"
         end
     end)
-
-    screenGui.Enabled = false
+    
+    local function handleTap()
+        if not dragging then
+            button.Text = "CARRY: ACTIVE"
+            button.BackgroundColor3 = Color3.fromHex("#3d0000")
+            stroke.Color = Color3.fromHex("#ff4444")
+            
+            getgenv().AutoCarryEnabled = not getgenv().AutoCarryEnabled
+            
+            button.Text = getgenv().AutoCarryEnabled and "CARRY: ON" or "CARRY: OFF"
+            button.BackgroundColor3 = getgenv().AutoCarryEnabled and Color3.fromHex("#3d0000") or Color3.fromHex("#1a0000")
+            stroke.Color = getgenv().AutoCarryEnabled and Color3.fromHex("#ff4444") or Color3.fromHex("#660000")
+            
+            if CarryToggle then
+                CarryToggle:SetValue(getgenv().AutoCarryEnabled)
+            end
+        end
+    end
+    
+    button.MouseButton1Click:Connect(handleTap)
+    button.TouchTap:Connect(handleTap)
+    
     return screenGui
 end
 
--- Criação das GUIs
-local AutoCarryGUI = CreateFloatingButton("AutoCarry", "AutoCarryEnabled", "AutoCarryPosition", 50)
-local AutoReviveGUI = CreateFloatingButton("AutoRevive", "AutoReviveEnabled", "AutoRevivePosition", 120)
+-- 2. Auto Revive Button
+local function CreateReviveFloatingButton()
+    local CoreGui = game:GetService("CoreGui")
+    
+    local oldGui = CoreGui:FindFirstChild("ReviveFloatingButton")
+    if oldGui then oldGui:Destroy() end
+    
+    local screenGui = Instance.new("ScreenGui")
+    screenGui.Name = "ReviveFloatingButton"
+    screenGui.ResetOnSpawn = false
+    screenGui.Parent = CoreGui
+    
+    local button = Instance.new("TextButton")
+    button.Size = UDim2.new(0, 160, 0, 55)
+    local startX = (workspace.CurrentCamera.ViewportSize.X / 2) - 80
+    local startY = (workspace.CurrentCamera.ViewportSize.Y / 2) - 27
+    button.Position = UDim2.new(0, startX, 0, startY)
+    button.Text = "REVIVE: OFF"
+    
+    -- Blood Moon Colors
+    button.BackgroundColor3 = Color3.fromHex("#1a0000")
+    button.TextColor3 = Color3.fromHex("#ffcccc")
+    button.Font = Enum.Font.GothamBold
+    button.TextSize = 14
+    button.AutoButtonColor = false
+    button.Parent = screenGui
+    
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0.2, 0)
+    corner.Parent = button
+    
+    local stroke = Instance.new("UIStroke")
+    stroke.Color = Color3.fromHex("#660000")
+    stroke.Thickness = 2
+    stroke.Parent = button
+    
+    local dragging = false
+    local dragStart, startPos
+    
+    button.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = true
+            dragStart = input.Position
+            startPos = button.Position
+            stroke.Color = Color3.fromHex("#ff4444")
+            button.Text = "DRAG..."
+        end
+    end)
+    
+    button.InputChanged:Connect(function(input)
+        if dragging and (input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseMovement) then
+            local delta = input.Position - dragStart
+            button.Position = UDim2.new(0, startPos.X.Offset + delta.X, 0, startPos.Y.Offset + delta.Y)
+        end
+    end)
+    
+    button.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = false
+            stroke.Color = getgenv().AutoReviveEnabled and Color3.fromHex("#ff4444") or Color3.fromHex("#660000")
+            button.Text = getgenv().AutoReviveEnabled and "REVIVE: ON" or "REVIVE: OFF"
+        end
+    end)
+    
+    local function handleTap()
+        if not dragging then
+            button.Text = "REVIVE: ACTIVE"
+            button.BackgroundColor3 = Color3.fromHex("#3d0000")
+            stroke.Color = Color3.fromHex("#ff4444")
+            
+            getgenv().AutoReviveEnabled = not getgenv().AutoReviveEnabled
+            
+            button.Text = getgenv().AutoReviveEnabled and "REVIVE: ON" or "REVIVE: OFF"
+            button.BackgroundColor3 = getgenv().AutoReviveEnabled and Color3.fromHex("#3d0000") or Color3.fromHex("#1a0000")
+            stroke.Color = getgenv().AutoReviveEnabled and Color3.fromHex("#ff4444") or Color3.fromHex("#660000")
+            
+            if ReviveToggle then
+                ReviveToggle:SetValue(getgenv().AutoReviveEnabled)
+            end
+        end
+    end
+    
+    button.MouseButton1Click:Connect(handleTap)
+    button.TouchTap:Connect(handleTap)
+    
+    return screenGui
+end
 
--- Loop de execução das funções
+local carryFloatingGui = nil
+local reviveFloatingGui = nil
+
+InteractionsSection:Toggle({
+    Title = "Show Carry Button",
+    Value = false,
+    Callback = function(state)
+        if state then
+            carryFloatingGui = CreateCarryFloatingButton()
+        else
+            if carryFloatingGui then
+                pcall(function() carryFloatingGui:Destroy() end)
+                carryFloatingGui = nil
+            end
+            getgenv().AutoCarryEnabled = false
+        end
+    end
+})
+
+InteractionsSection:Input({
+    Title = "Carry Delay (s)",
+    Placeholder = "0.1",
+    Value = tostring(getgenv().AutoCarryDelay),
+    Callback = function(val)
+        local n = tonumber(val)
+        if n and n > 0 then
+            getgenv().AutoCarryDelay = n
+        end
+    end
+})
+
+InteractionsSection:Toggle({
+    Title = "Show Revive Button",
+    Value = false,
+    Callback = function(state)
+        if state then
+            reviveFloatingGui = CreateReviveFloatingButton()
+        else
+            if reviveFloatingGui then
+                pcall(function() reviveFloatingGui:Destroy() end)
+                reviveFloatingGui = nil
+            end
+            getgenv().AutoReviveEnabled = false
+        end
+    end
+})
+
+InteractionsSection:Input({
+    Title = "Revive Delay (s)",
+    Placeholder = "0.1",
+    Value = tostring(getgenv().AutoReviveDelay),
+    Callback = function(val)
+        local n = tonumber(val)
+        if n and n > 0 then
+            getgenv().AutoReviveDelay = n
+        end
+    end
+})
+
+-- ================================
+-- تشغيل حلقات Auto Carry و Auto Revive
+-- ================================
 RunService.RenderStepped:Connect(function()
     if getgenv().AutoCarryEnabled then
         local myHRP = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
@@ -643,64 +691,6 @@ RunService.RenderStepped:Connect(function()
         end
     end
 end)
-
-MainTab:Space()
-
-local Section = MainTab:Section({ 
-    Title = "Interactions",
-})
-
--- Toggle para abrir GUI flutuante
-MainTab:Toggle({
-    Title = "Auto Carry GUI",
-    Value = false,
-    Callback = function(state)
-        AutoCarryGUI.Enabled = state
-        if not state then
-            getgenv().AutoCarryEnabled = false
-        end
-    end
-})
--- Inputs de delay na aba WindUI
-MainTab:Input({
-    Title = "Carry Delay (s)",
-    Placeholder = "0.1",
-    Value = tostring(getgenv().AutoCarryDelay),
-    Callback = function(val)
-        local n = tonumber(val)
-        if n and n > 0 then
-            getgenv().AutoCarryDelay = n
-        end
-    end
-})
-
-
-MainTab:Toggle({
-    Title = "Auto Revive GUI",
-    Value = false,
-    Callback = function(state)
-        AutoReviveGUI.Enabled = state
-        if not state then
-            getgenv().AutoReviveEnabled = false
-        end
-    end
-})
-
-
-MainTab:Input({
-    Title = "Revive Delay (s)",
-    Placeholder = "0.1",
-    Value = tostring(getgenv().AutoReviveDelay),
-    Callback = function(val)
-        local n = tonumber(val)
-        if n and n > 0 then
-            getgenv().AutoReviveDelay = n
-        end
-    end
-})
-
-
-
 -- ============================================
 -- INFINITE SLIDE MODULE
 -- مع حماية Errors
@@ -1291,332 +1281,7 @@ end
     print("[AutoTrimp] Loaded successfully!")
 end)
   
--- ============================================
--- Emote Speed Module - Misc Tab
--- مستخرج من Draconic Hub Remake
--- ============================================
 
--- ========== إعدادات المتغيرات ==========
-local Players = game:GetService("Players")
-local LP = Players.LocalPlayer
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-
--- تخزين السرعات الأصلية للإيموشنات
-local originalEmoteSpeeds = {}
-
--- جلب مجلد الإيموشنات
-local itemsFolder = ReplicatedStorage:FindFirstChild("Items")
-if itemsFolder then
-    local emotesFolder = itemsFolder:FindFirstChild("Emotes")
-    if emotesFolder then
-        for _, emoteModule in ipairs(emotesFolder:GetChildren()) do
-            if emoteModule:IsA("ModuleScript") then
-                local success, emoteData = pcall(require, emoteModule)
-                if success and emoteData and emoteData.EmoteInfo then
-                    originalEmoteSpeeds[emoteModule.Name] = emoteData.EmoteInfo.SpeedMult
-                end
-            end
-        end
-    end
-end
-
--- ========== دالة تطبيق سرعة الإيموشنات ==========
-local function applyEmoteSpeed(speedValue)
-    if not itemsFolder then return end
-    local emotesFolder = itemsFolder:FindFirstChild("Emotes")
-    if not emotesFolder then return end
-    
-    for _, emoteModule in ipairs(emotesFolder:GetChildren()) do
-        if emoteModule:IsA("ModuleScript") then
-            local success, emoteData = pcall(require, emoteModule)
-            if success and emoteData and emoteData.EmoteInfo and emoteData.EmoteInfo.SpeedMult ~= 0 then
-                emoteData.EmoteInfo.SpeedMult = speedValue
-            end
-        end
-    end
-end
-
--- ========== دالة استعادة السرعات الأصلية ==========
-local function restoreOriginalEmoteSpeeds()
-    if not itemsFolder then return end
-    local emotesFolder = itemsFolder:FindFirstChild("Emotes")
-    if not emotesFolder then return end
-    
-    for _, emoteModule in ipairs(emotesFolder:GetChildren()) do
-        if emoteModule:IsA("ModuleScript") then
-            local originalSpeed = originalEmoteSpeeds[emoteModule.Name]
-            if originalSpeed then
-                local success, emoteData = pcall(require, emoteModule)
-                if success and emoteData and emoteData.EmoteInfo then
-                    emoteData.EmoteInfo.SpeedMult = originalSpeed
-                end
-            end
-        end
-    end
-end
-
--- ========== جداول الحركة لـ Multiplier Speed ==========
-local requiredFields = {
-    Friction = true, AirStrafeAcceleration = true, JumpHeight = true,
-    RunDeaccel = true, JumpSpeedMultiplier = true, JumpCap = true,
-    SprintCap = true, WalkSpeedMultiplier = true, BhopEnabled = true,
-    Speed = true, AirAcceleration = true, RunAccel = true, SprintAcceleration = true
-}
-
-local function getMatchingTables()
-    local matched = {}
-    for _, obj in pairs(getgc(true)) do
-        if typeof(obj) == "table" then
-            local ok = true
-            for field in pairs(requiredFields) do
-                if rawget(obj, field) == nil then
-                    ok = false
-                    break
-                end
-            end
-            if ok then
-                table.insert(matched, obj)
-            end
-        end
-    end
-    return matched
-end
-
-local function applySpeedMultiplier(speedMultiplier)
-    local targets = getMatchingTables()
-    for _, tableObj in ipairs(targets) do
-        if tableObj and typeof(tableObj) == "table" then
-            pcall(function()
-                tableObj.WalkSpeedMultiplier = speedMultiplier
-            end)
-        end
-    end
-end
-
--- ========== الحصول على موديل اللاعب ==========
-local function getPlayerObj()
-    local gamePlayers = workspace.Game and workspace.Game.Players
-    if not gamePlayers then return nil end
-    return gamePlayers:FindFirstChild(LP.Name)
-end
-
--- ========== متغيرات Multiplier Speed ==========
-local playerObj = nil
-local connection = nil
-local emotingSpeed = 1.5
-
-local function setupConnection(obj)
-    if connection then 
-        connection:Disconnect() 
-        connection = nil
-    end
-    playerObj = obj
-    if not obj then return end
-    
-    local function onStateChanged()
-        local state = obj:GetAttribute("State")
-        local targetSpeed = (state == "Emoting") and emotingSpeed or 1.5
-        applySpeedMultiplier(targetSpeed)
-    end
-    
-    onStateChanged()
-    connection = obj:GetAttributeChangedSignal("State"):Connect(onStateChanged)
-end
-
-local function resetMultiplierSpeed()
-    emotingSpeed = 1.5
-    applySpeedMultiplier(1.5)
-    if connection then
-        connection:Disconnect()
-        connection = nil
-    end
-end
-
--- ========== زر تطبيق على الإيموشنات غير القابلة للمشي ==========
-local function ApplyToUnwalkableEmotes(speedValue)
-    if not itemsFolder then return end
-    
-    local emotesFolder = itemsFolder:FindFirstChild("Emotes")
-    if not emotesFolder then return end
-    
-    for _, emoteModule in ipairs(emotesFolder:GetChildren()) do
-        if emoteModule:IsA("ModuleScript") then
-            local success, emoteData = pcall(require, emoteModule)
-            if success and emoteData and emoteData.EmoteInfo and emoteData.EmoteInfo.SpeedMult == 0 then
-                emoteData.EmoteInfo.SpeedMult = speedValue
-            end
-        end
-    end
-end
-
--- ========== إعادة تعيين كل شيء ==========
-local function ResetAllEmoteSpeeds()
-    restoreOriginalEmoteSpeeds()
-    resetMultiplierSpeed()
-    if connection then 
-        connection:Disconnect() 
-        connection = nil
-    end
-end
-
--- ============================================
--- البحث عن تبويب Misc
--- ============================================
-local MiscTab = nil
-
-if Tabs and Tabs.Misc then
-    MiscTab = Tabs.Misc
-elseif Window and Window.Tabs then
-    for _, tab in pairs(Window.Tabs) do
-        if tab and (tab.Title == "Misc" or tab.Title == "Miscellaneous") then
-            MiscTab = tab
-            break
-        end
-    end
-end
-
--- ============================================
--- إضافة القسم إلى تبويب Misc
--- ============================================
-if MiscTab then
-    local EmoteSpeedSection = MiscTab:Section({
-        Title = "Emote Speed",
-        Side = "Left"
-    })
-    
-    if EmoteSpeedSection then
-        -- متغيرات الحالة
-        local currentMode = "Nah"
-        local emoteSpeedValue = 1.5
-        
-        -- دالة تبديل الوضع
-        local function SetMode(mode)
-            currentMode = mode
-            
-            if mode == "Nah" then
-                ResetAllEmoteSpeeds()
-            elseif mode == "Legit" then
-                resetMultiplierSpeed()
-                if connection then 
-                    connection:Disconnect() 
-                    connection = nil
-                end
-                applyEmoteSpeed(emoteSpeedValue)
-            elseif mode == "Multiplier speed" then
-                restoreOriginalEmoteSpeeds()
-                resetMultiplierSpeed()
-                setupConnection(getPlayerObj())
-                task.spawn(function()
-                    while currentMode == "Multiplier speed" do
-                        task.wait(2)
-                        local current = getPlayerObj()
-                        if current ~= playerObj then
-                            setupConnection(current)
-                        elseif playerObj then
-                            local state = playerObj:GetAttribute("State")
-                            local targetSpeed = (state == "Emoting") and emotingSpeed or 1.5
-                            applySpeedMultiplier(targetSpeed)
-                        end
-                    end
-                end)
-            end
-        end
-        
-        -- دالة تحديث السرعة
-        local function UpdateSpeedValue(newValue)
-            emoteSpeedValue = newValue
-            if currentMode == "Legit" then
-                applyEmoteSpeed(newValue)
-            elseif currentMode == "Multiplier speed" then
-                emotingSpeed = newValue
-            end
-        end
-        
-        -- ========== إضافة العناصر ==========
-        
-        -- Dropdown لاختيار الوضع
-        EmoteSpeedSection:Dropdown({
-            Title = "Emote Speed Mode",
-            Values = { "Nah", "Legit", "Multiplier speed" },
-            Default = "Nah",
-            Callback = function(value)
-                SetMode(value)
-                if WindUI and WindUI.Notify then
-                    WindUI:Notify({
-                        Title = "Emote Speed",
-                        Content = "Mode: " .. value,
-                        Duration = 2
-                    })
-                end
-            end
-        })
-        
-        -- Slider للسرعة
-        EmoteSpeedSection:Slider({
-            Title = "Speed Multiplier",
-            Desc = "1x = Normal | 1.5x = Faster | 20x = Max",
-            Value = { Min = 0.1, Max = 20, Default = 1.5 },
-            Step = 0.1,
-            Callback = function(value)
-                UpdateSpeedValue(value)
-                if WindUI and WindUI.Notify then
-                    WindUI:Notify({
-                        Title = "Speed",
-                        Content = string.format("%.1fx", value),
-                        Duration = 1
-                    })
-                end
-            end
-        })
-        
-        -- زر تطبيق على الإيموشنات غير القابلة للمشي
-        EmoteSpeedSection:Button({
-            Title = "Apply to Unwalkable Emotes",
-            Desc = "Applies speed to emotes that normally can't move",
-            Callback = function()
-                ApplyToUnwalkableEmotes(emoteSpeedValue)
-                if WindUI and WindUI.Notify then
-                    WindUI:Notify({
-                        Title = "Emote Speed",
-                        Content = "Applied to unwalkable emotes",
-                        Duration = 2
-                    })
-                end
-            end
-        })
-        
-        -- زر إعادة تعيين
-        EmoteSpeedSection:Button({
-            Title = "Reset All Emote Speeds",
-            Desc = "Restores all emote speeds to original values",
-            Callback = function()
-                ResetAllEmoteSpeeds()
-                currentMode = "Nah"
-                if WindUI and WindUI.Notify then
-                    WindUI:Notify({
-                        Title = "Emote Speed",
-                        Content = "All speeds reset to original",
-                        Duration = 2
-                    })
-                end
-            end
-        })
-    end
-else
-    -- لو مش لاقي تبويب Misc، نطبع رسالة في الكونسول
-    print("[Emote Speed] Misc tab not found, skipping UI creation")
-end
-
--- ========== إشعار التحميل ==========
-if WindUI and WindUI.Notify then
-    WindUI:Notify({
-        Title = "Emote Speed",
-        Content = "Loaded in Misc tab | Speed: 0.1x to 20x",
-        Duration = 3
-    })
-end
-
-print("[Emote Speed] Module loaded successfully in Misc tab!")
 
 -- ============================================
 -- Auto Jump System v2 - WindUI Version
@@ -2157,6 +1822,286 @@ end
     
     print("[Auto Jump] Loaded successfully in Misc tab!")
 end)
+
+-- ================================
+-- Emote modifications
+-- ================================
+local EmoteSection = Tabs.Misc:Section({ 
+    Title = "Emote modifications",
+    Side = "Left",
+    Collapsed = true,
+})
+
+local originalEmoteSpeeds = {}
+local itemsFolder = game:GetService("ReplicatedStorage"):FindFirstChild("Items")
+if itemsFolder then
+    local emotesFolder = itemsFolder:FindFirstChild("Emotes")
+    if emotesFolder then
+        for _, module in ipairs(emotesFolder:GetChildren()) do
+            if module:IsA("ModuleScript") then
+                local ok, data = pcall(require, module)
+                if ok and data and data.EmoteInfo then
+                    originalEmoteSpeeds[module.Name] = data.EmoteInfo.SpeedMult
+                end
+            end
+        end
+    end
+end
+
+local function applyEmoteSpeed(v)
+    if not itemsFolder then return end
+    local emotesFolder = itemsFolder:FindFirstChild("Emotes")
+    if not emotesFolder then return end
+    
+    for _, module in ipairs(emotesFolder:GetChildren()) do
+        if module:IsA("ModuleScript") then
+            local ok, data = pcall(require, module)
+            if ok and data and data.EmoteInfo and data.EmoteInfo.SpeedMult ~= 0 then
+                data.EmoteInfo.SpeedMult = v
+            end
+        end
+    end
+end
+
+local function restoreOriginal()
+    if not itemsFolder then return end
+    local emotesFolder = itemsFolder:FindFirstChild("Emotes")
+    if not emotesFolder then return end
+    
+    for _, module in ipairs(emotesFolder:GetChildren()) do
+        if module:IsA("ModuleScript") then
+            local original = originalEmoteSpeeds[module.Name]
+            if original then
+                local ok, data = pcall(require, module)
+                if ok and data and data.EmoteInfo then
+                    data.EmoteInfo.SpeedMult = original
+                end
+            end
+        end
+    end
+end
+
+-- ========== جداول الحركة لـ Multiplier Speed ==========
+local requiredFields = {
+    Friction = true, AirStrafeAcceleration = true, JumpHeight = true,
+    RunDeaccel = true, JumpSpeedMultiplier = true, JumpCap = true,
+    SprintCap = true, WalkSpeedMultiplier = true, BhopEnabled = true,
+    Speed = true, AirAcceleration = true, RunAccel = true, SprintAcceleration = true
+}
+
+local function getMatchingTables()
+    local matched = {}
+    for _, obj in pairs(getgc(true)) do
+        if typeof(obj) == "table" then
+            local ok = true
+            for field in pairs(requiredFields) do
+                if rawget(obj, field) == nil then
+                    ok = false
+                    break
+                end
+            end
+            if ok then
+                table.insert(matched, obj)
+            end
+        end
+    end
+    return matched
+end
+
+local function applySpeedMultiplier(speedMultiplier)
+    local targets = getMatchingTables()
+    for _, tableObj in ipairs(targets) do
+        if tableObj and typeof(tableObj) == "table" then
+            pcall(function()
+                tableObj.WalkSpeedMultiplier = speedMultiplier
+            end)
+        end
+    end
+end
+
+-- ========== الحصول على موديل اللاعب ==========
+local function getPlayerObj()
+    local gamePlayers = workspace.Game and workspace.Game.Players
+    if not gamePlayers then return nil end
+    return gamePlayers:FindFirstChild(LP.Name)
+end
+
+-- ========== متغيرات Multiplier Speed ==========
+local playerObj = nil
+local connection = nil
+local emotingSpeed = 1.5
+
+local function setupConnection(obj)
+    if connection then 
+        connection:Disconnect() 
+        connection = nil
+    end
+    playerObj = obj
+    if not obj then return end
+    
+    local function onStateChanged()
+        local state = obj:GetAttribute("State")
+        local targetSpeed = (state == "Emoting") and emotingSpeed or 1.5
+        applySpeedMultiplier(targetSpeed)
+    end
+    
+    onStateChanged()
+    connection = obj:GetAttributeChangedSignal("State"):Connect(onStateChanged)
+end
+
+local function resetMultiplierSpeed()
+    emotingSpeed = 1.5
+    applySpeedMultiplier(1.5)
+    if connection then
+        connection:Disconnect()
+        connection = nil
+    end
+end
+
+-- ========== زر تطبيق على الإيموشنات غير القابلة للمشي ==========
+local function ApplyToUnwalkableEmotes(speedValue)
+    if not itemsFolder then return end
+    
+    local emotesFolder = itemsFolder:FindFirstChild("Emotes")
+    if not emotesFolder then return end
+    
+    for _, emoteModule in ipairs(emotesFolder:GetChildren()) do
+        if emoteModule:IsA("ModuleScript") then
+            local success, emoteData = pcall(require, emoteModule)
+            if success and emoteData and emoteData.EmoteInfo and emoteData.EmoteInfo.SpeedMult == 0 then
+                emoteData.EmoteInfo.SpeedMult = speedValue
+            end
+        end
+    end
+end
+
+-- ========== إعادة تعيين كل شيء ==========
+local function ResetAllEmoteSpeeds()
+    restoreOriginal()
+    resetMultiplierSpeed()
+    if connection then 
+        connection:Disconnect() 
+        connection = nil
+    end
+end
+
+featureStates = featureStates or {}
+featureStates.EmoteSpeedValue = 2
+
+-- ========== إضافة العناصر ==========
+
+-- متغيرات الحالة
+local currentMode = "Nah"
+local emoteSpeedValue = 1.5
+
+-- دالة تبديل الوضع
+local function SetMode(mode)
+    currentMode = mode
+    
+    if mode == "Nah" then
+        ResetAllEmoteSpeeds()
+    elseif mode == "Legit" then
+        resetMultiplierSpeed()
+        if connection then 
+            connection:Disconnect() 
+            connection = nil
+        end
+        applyEmoteSpeed(emoteSpeedValue)
+    elseif mode == "Multiplier speed" then
+        restoreOriginal()
+        resetMultiplierSpeed()
+        setupConnection(getPlayerObj())
+        task.spawn(function()
+            while currentMode == "Multiplier speed" do
+                task.wait(2)
+                local current = getPlayerObj()
+                if current ~= playerObj then
+                    setupConnection(current)
+                elseif playerObj then
+                    local state = playerObj:GetAttribute("State")
+                    local targetSpeed = (state == "Emoting") and emotingSpeed or 1.5
+                    applySpeedMultiplier(targetSpeed)
+                end
+            end
+        end)
+    end
+end
+
+-- دالة تحديث السرعة
+local function UpdateSpeedValue(newValue)
+    emoteSpeedValue = newValue
+    if currentMode == "Legit" then
+        applyEmoteSpeed(newValue)
+    elseif currentMode == "Multiplier speed" then
+        emotingSpeed = newValue
+    end
+end
+
+-- Dropdown لاختيار الوضع
+EmoteSection:Dropdown({
+    Title = "Emote Speed Mode",
+    Values = { "Nah", "Legit", "Multiplier speed" },
+    Default = "Nah",
+    Callback = function(value)
+        SetMode(value)
+        if WindUI and WindUI.Notify then
+            WindUI:Notify({
+                Title = "Emote Speed",
+                Content = "Mode: " .. value,
+                Duration = 2
+            })
+        end
+    end
+})
+
+-- Input للسرعة
+EmoteSection:Input({
+    Title = "Emote Speed Value",
+    Description = "Changes the animation speed of your emotes",
+    Placeholder = "1500",
+    Numeric = true,
+    Callback = function(value)
+        local num = tonumber(value)
+        if not num or num <= 0 then return end
+
+        featureStates.EmoteSpeedValue = num
+        local applied = num / 1000
+        UpdateSpeedValue(applied)
+    end
+})
+
+-- زر تطبيق على الإيموشنات غير القابلة للمشي
+EmoteSection:Button({
+    Title = "Apply to Unwalkable Emotes",
+    Desc = "Applies speed to emotes that normally can't move",
+    Callback = function()
+        ApplyToUnwalkableEmotes(emoteSpeedValue)
+        if WindUI and WindUI.Notify then
+            WindUI:Notify({
+                Title = "Emote Speed",
+                Content = "Applied to unwalkable emotes",
+                Duration = 2
+            })
+        end
+    end
+})
+
+-- زر إعادة تعيين
+EmoteSection:Button({
+    Title = "Reset All Emote Speeds",
+    Desc = "Restores all emote speeds to original values",
+    Callback = function()
+        ResetAllEmoteSpeeds()
+        currentMode = "Nah"
+        if WindUI and WindUI.Notify then
+            WindUI:Notify({
+                Title = "Emote Speed",
+                Content = "All speeds reset to original",
+                Duration = 2
+            })
+        end
+    end
+})
 -- ====================================================================
 -- 🌐 HYPER V1.0 - PURE CLIENT LAG SWITCH (OCEAN DEEP STYLE)
 -- ====================================================================
