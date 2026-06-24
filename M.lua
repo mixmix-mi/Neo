@@ -1,3 +1,11 @@
+local Tabs = {
+    Misc = Window:Tab({ Title = "Misc", Icon = "solar:box-minimalistic-outline", Locked = false })
+}
+
+if not Tabs.Misc then
+    Tabs.Misc = Window:Tab({ Title = "Misc", Icon = "solar:box-minimalistic-outline", Locked = false })
+end
+
 -- ============================================
 -- 🔧 FIX ALL PROBLEMS - حل جميع المشاكل
 -- ============================================
@@ -67,13 +75,6 @@ local LP = Players.LocalPlayer
 -- إنشاء التبويب الرئيسي
 -- ============================================
 
-local Tabs = {
-    Misc = Window:Tab({ Title = "Misc", Icon = "solar:box-minimalistic-outline", Locked = false })
-}
-
-if not Tabs.Misc then
-    Tabs.Misc = Window:Tab({ Title = "Misc", Icon = "solar:box-minimalistic-outline", Locked = false })
-end
 
 -- ✅ التصحيح: استخدم Tabs.Misc بدلاً من Main
 local Section = Tabs.Misc:Section({ 
