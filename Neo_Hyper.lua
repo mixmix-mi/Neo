@@ -677,13 +677,11 @@ local elementsToRegister = {
     "InfiniteSlideToggle",
     "SlideFrictionSlider",
     
-    -- AutoTrimp
+
+    -- ===== من M.lua (AutoTrimp) =====
     "AutoTrimpToggle",
     "AutoTrimpGUIToggle",
-    "BaseSpeedSlider",
-    "MaxExtraSpeedSlider",
-    "AccelerationRateSlider",
-    
+    "AutoTrimpSpeedInput",
     -- Auto Jump
     "AutoJumpTypeDropdown",
     "RotationToggle",
