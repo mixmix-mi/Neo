@@ -1142,6 +1142,7 @@ end
 
 -- تشغيل الموديول
 LoadInfiniteSlide()
+
 -- ================================
 -- AutoTrimp & BackTrimp (Blood Moon Style)
 -- ================================
@@ -1162,7 +1163,7 @@ local PlayerGui = LP:WaitForChild("PlayerGui")
 getgenv().AutoTrimpEnabled = false
 getgenv().AutoTrimpSpeed = 50
 getgenv().AutoTrimpPosition = getgenv().AutoTrimpPosition or UDim2.new(0.5, -110, 0, 10)
-getgenv().AutoTrimpMode = "Incremental" -- "Incremental" or "Constant"
+getgenv().AutoTrimpMode = "Incremental" -- "Incremental" or "Constant" or "Infinite"
 getgenv().BackTrimpEnabled = false
 
 local minSpeedOffset = 0
@@ -1425,7 +1426,8 @@ RunService.RenderStepped:Connect(function()
             end
             wasAir = isAir
 
-            if getgenv().AutoTrimpEnabled then
+            -- ✅ شرط التشغيل: AutoTrimp OR BackTrimp
+            if getgenv().AutoTrimpEnabled or getgenv().BackTrimpEnabled then
                 if isAir then
                     airAccumulator = airAccumulator + deltaTime
                     airTotalTime = airTotalTime + deltaTime
@@ -1436,6 +1438,12 @@ RunService.RenderStepped:Connect(function()
                             airAccumulator = airAccumulator - 0.04
                             local increment = math.max(0.1, 2.5 * (0.04 / 1))
                             currentSpeed = currentSpeed + increment
+                        end
+                    elseif getgenv().AutoTrimpMode == "Infinite" then
+                        -- ✅ وضع الـ Infinite (السرعة بتزيد بسرعة كبيرة جداً - تصل للمليون)
+                        while airAccumulator >= 0.02 do
+                            airAccumulator = airAccumulator - 0.02
+                            currentSpeed = currentSpeed + 1000 -- زيادة سريعة جداً
                         end
                     else
                         -- وضع الثابت (السرعة ثابتة)
@@ -1455,7 +1463,7 @@ RunService.RenderStepped:Connect(function()
                     lookDir = lookDir.Unit
                 end
 
-                -- ✅ BackTrimp (عكس الاتجاه)
+                -- ✅ BackTrimp (عكس الاتجاه) - يشتغل لوحده بدون AutoTrimp
                 if getgenv().BackTrimpEnabled then
                     lookDir = -lookDir
                 end
@@ -1556,7 +1564,7 @@ if MiscTab then
     AutoTrimpSection:Dropdown({
         Title = "Speed Mode",
         Flag = "AutoTrimpModeDropdown",
-        Values = { "Incremental", "Constant" },
+        Values = { "Incremental", "Constant", "Infinite" },
         Default = "Incremental",
         Callback = function(value)
             getgenv().AutoTrimpMode = value
@@ -1589,7 +1597,7 @@ if MiscTab then
         end
     })
 
-    -- Toggle تفعيل BackTrimp
+    -- ✅ Toggle تفعيل BackTrimp (يشتغل لوحده)
     AutoTrimpSection:Toggle({
         Title = "Enable BackTrimp",
         Flag = "BackTrimpToggle",
