@@ -707,11 +707,6 @@ MainTab:Toggle({
 
 
 
--- Detecta CharacterAdded e reinicia se necessário
-LocalPlayer.CharacterAdded:Connect(function()
-	task.wait(0.1)
-	restartInfiniteSlide()
-end)
 
 -- Detecta Remote ChangePlayerMode
 local EventsFolder = ReplicatedStorage:WaitForChild("Events"):WaitForChild("Player")
