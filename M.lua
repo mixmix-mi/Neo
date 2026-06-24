@@ -1160,7 +1160,7 @@ local PlayerGui = LP:WaitForChild("PlayerGui")
 -- ================================
 -- المتغيرات
 -- ================================
-local NATURAL_SPEED = 16
+local NATURAL_SPEED = 0
 
 getgenv().AutoTrimpEnabled = false
 getgenv().AutoTrimpSpeed = 50
