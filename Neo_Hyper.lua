@@ -1,3 +1,45 @@
+-- ================================
+-- Chat Message - Neo Hyper
+-- ================================
+
+task.spawn(function()
+    task.wait(1)
+    
+    local player = game:GetService("Players").LocalPlayer
+    local chatService = game:GetService("TextChatService")
+    local replicatedStorage = game:GetService("ReplicatedStorage")
+    
+    local function sendChatMessage(message)
+        pcall(function()
+            -- طريقة 1: TextChatService
+            if chatService and chatService.TextChannels then
+                local channel = chatService.TextChannels:FindFirstChild("RBXGeneral")
+                if channel then
+                    channel:SendAsync(message)
+                    return
+                end
+            end
+            
+            -- طريقة 2: ReplicatedStorage (الطريقة القديمة)
+            local event = replicatedStorage:FindFirstChild("Events") and 
+                         replicatedStorage.Events:FindFirstChild("Chat") and
+                         replicatedStorage.Events.Chat:FindFirstChild("Send")
+            if event then
+                event:FireServer(message)
+                return
+            end
+            
+            -- طريقة 3: Chat Service القديم
+            local chat = game:GetService("Chat")
+            if chat and chat:FindFirstChild("Chat") then
+                chat.Chat:FireServer(message)
+                return
+            end
+        end)
+    end
+    
+    sendChatMessage("Welcome Owner Of Neo Hyper")
+end)
 -- ===== تعطيل المخرجات أولاً =====
 --print = function() end
 --pcall(function() end)
