@@ -503,14 +503,7 @@ task.spawn(function()
     end
 end)
 
--- ============================================
--- واجهة الكونفج في Settings Tab
--- ============================================
-local SettingsTab = Window:Tab({
-    Title = "Settings",
-    Icon = "settings",
-    Locked = false,
-})
+
 
 local ConfigSection = SettingsTab:Section({
     Title = "Configuration",
