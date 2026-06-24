@@ -1538,13 +1538,13 @@ RunService.RenderStepped:Connect(function()
         end
     end
     
-    if debugTimer >= 1 then
-        debugTimer = 0
-        DebugPrint("Current Speed: " .. truncate1Decimal(currentSpeed) .. 
-                  " | Mode: " .. getgenv().AutoTrimpMode .. 
-                  " | Increment Rate: " .. getgenv().AutoTrimpIncrementRate)
-    end
-end)
+-- طباعة التصحيح كل ثانية
+if debugTimer >= 1 then
+    debugTimer = 0
+    DebugPrint("Current Speed: " .. truncate1Decimal(currentSpeed) .. 
+              " | Mode: " .. getgenv().AutoTrimpMode .. 
+              " | Increment Rate: " .. getgenv().AutoTrimpIncrementRate)
+end
 
 -- ================================
 -- إعداد الـ Hook فوراً
