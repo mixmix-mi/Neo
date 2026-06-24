@@ -1507,12 +1507,11 @@ RunService.RenderStepped:Connect(function()
                         currentSpeed = getgenv().AutoTrimpSpeed
                     end
                 else
-                    airAccumulator = 0
-                    if getgenv().AutoTrimpMode == "Constant" then
-                        currentSpeed = getgenv().AutoTrimpSpeed
-                    end
-                    airTotalTime = 0
-                end
+                        airAccumulator = 0
+if getgenv().AutoTrimpMode == "Constant" then
+    currentSpeed = getgenv().AutoTrimpSpeed
+end
+airTotalTime = 0
 
                 if activeBV then activeBV:Destroy() end
 
