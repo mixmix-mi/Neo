@@ -1163,7 +1163,7 @@ local PlayerGui = LP:WaitForChild("PlayerGui")
 getgenv().AutoTrimpEnabled = false
 getgenv().AutoTrimpSpeed = 50
 getgenv().AutoTrimpPosition = getgenv().AutoTrimpPosition or UDim2.new(0.5, -110, 0, 10)
-getgenv().AutoTrimpMode = "Incremental" -- "Incremental" or "Constant" or "Infinite"
+getgenv().AutoTrimpMode = "Incremental" -- "Incremental" or "Constant"
 getgenv().BackTrimpEnabled = false
 
 local minSpeedOffset = 0
@@ -1433,20 +1433,13 @@ RunService.RenderStepped:Connect(function()
                     airTotalTime = airTotalTime + deltaTime
                     
                     if getgenv().AutoTrimpMode == "Incremental" then
-                        -- وضع التدريج (السرعة بتزيد مع الوقت في الهواء)
-                        while airAccumulator >= 0.04 do
-                            airAccumulator = airAccumulator - 0.04
-                            local increment = math.max(0.1, 2.5 * (0.04 / 1))
-                            currentSpeed = currentSpeed + increment
-                        end
-                    elseif getgenv().AutoTrimpMode == "Infinite" then
-                        -- ✅ وضع الـ Infinite (السرعة بتزيد بسرعة كبيرة جداً - تصل للمليون)
+                        -- ✅ وضع التدريج (السرعة بتزيد مع الوقت في الهواء - لا نهائي)
                         while airAccumulator >= 0.02 do
                             airAccumulator = airAccumulator - 0.02
-                            currentSpeed = currentSpeed + 1000 -- زيادة سريعة جداً
+                            currentSpeed = currentSpeed + 2.5
                         end
                     else
-                        -- وضع الثابت (السرعة ثابتة)
+                        -- ✅ وضع الثابت (السرعة ثابتة على Speed Input)
                         currentSpeed = getgenv().AutoTrimpSpeed
                     end
                 else
@@ -1560,11 +1553,11 @@ if MiscTab then
         end
     })
 
-    -- Dropdown لاختيار وضع السرعة
+    -- ✅ Dropdown لاختيار وضع السرعة (Incremental = لا نهائي, Constant = Speed Input)
     AutoTrimpSection:Dropdown({
         Title = "Speed Mode",
         Flag = "AutoTrimpModeDropdown",
-        Values = { "Incremental", "Constant", "Infinite" },
+        Values = { "Incremental", "Constant" },
         Default = "Incremental",
         Callback = function(value)
             getgenv().AutoTrimpMode = value
@@ -1581,7 +1574,7 @@ if MiscTab then
         end
     })
 
-    -- Input سرعة AutoTrimp
+    -- Input سرعة AutoTrimp (يستخدم في وضع Constant فقط)
     AutoTrimpSection:Input({
         Title = "AutoTrimp Speed",
         Flag = "AutoTrimpSpeedInput",
@@ -1592,7 +1585,9 @@ if MiscTab then
             local num = tonumber(value)
             if num and num > 0 then
                 getgenv().AutoTrimpSpeed = num
-                currentSpeed = num
+                if getgenv().AutoTrimpMode == "Constant" then
+                    currentSpeed = num
+                end
             end
         end
     })
@@ -1655,7 +1650,8 @@ if MiscTab then
 end
 
 print("[AutoTrimp & BackTrimp] Loaded successfully!")
--- ============================================
+
+
 -- Auto Jump System v2 - WindUI Version
 -- ============================================
 pcall(function()
