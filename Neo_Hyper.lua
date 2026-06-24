@@ -645,14 +645,9 @@ ConfigSection:Button({
 -- ============================================
 -- 🔵 تسجيل العناصر بقائمة مخصصة (الطريقة الرابعة)
 -- ============================================
-
--- قائمة الـ Flags لكل العناصر في كل الملفات
 local elementsToRegister = {
     -- ===== من ملف H.lua (Home) =====
-    -- Anti AFK
     "AntiAFKToggle",
-    
-    -- Fly
     "FlyToggle",
     
     -- ===== من ملف M.lua (Misc) =====
@@ -722,25 +717,16 @@ local elementsToRegister = {
     "GravityKeybind",
     
     -- ===== من ملف E.lua (ESP) =====
-    -- Player ESP
     "PlayerESP",
     "NormalColorDropdown",
     "DownedColorDropdown",
-    
-    -- Highlight
     "PlayerHighlight",
-    
-    -- Nextbot
     "NextbotESP",
     "NextbotHighlight",
     "NextbotESPColorDropdown",
     "NextbotHighlightColorDropdown",
-    
-    -- Performance
     "NoFogToggle",
     "FullBrightToggle",
-    
-    -- Barriers
     "RemoveBarriersToggle",
     "BarriersVisibleToggle",
     
@@ -749,10 +735,8 @@ local elementsToRegister = {
     "TicketFarmToggle",
     "CashFarmToggle",
     "AFKPlatformHeightSlider",
-    
-    -- ===== من ملف V.lua (VIP) =====
-    -- (الأزرار مش بتتسجل في الكونفج لأنها Buttons)
 }
+-- قائمة الـ Flags لكل العناصر في كل الملفات
 
 -- ============================================
 -- تسجيل كل العناصر في القائمة
