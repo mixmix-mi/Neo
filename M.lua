@@ -1,21 +1,57 @@
 -- ============================================
--- ضع هذا الكود في أول السكربت
+-- 🔧 FIX ALL PROBLEMS - حل جميع المشاكل
 -- ============================================
 
-Window=Window or _G.Window or getgenv().Window
-MainTab=MainTab or (Tabs and Tabs.Misc)
-warn=warn or function(m) print("⚠️ "..tostring(m)) end
-getgc=getgc or function() return{} end
-WindUI=WindUI or _G.WindUI or getgenv().WindUI or {Notify=function(_,d) print("🔔 ["..d.Title.."] "..d.Content) end}
-featureStates=featureStates or {}
-getgenv=getgenv or function() return _G end
-task=task or {wait=function(t) wait(t) end, spawn=function(f) spawn(f) end, defer=function(f) spawn(f) end, delay=function(t,f) delay(t,f) end}
+-- 1️⃣ تعريف Window (لو مش موجود)
+if not Window then
+    Window = _G.Window or getgenv().Window
+end
 
-print("✅ All problems fixed!")
+-- 2️⃣ تعريف MainTab (عشان الكود القديم)
+if not MainTab then
+    MainTab = Tabs and Tabs.Misc
+end
 
--- ============================================
--- باقي الكود هنا
--- ============================================
+-- 3️⃣ تعريف warn (لو مش موجود)
+if not warn then
+    warn = function(msg) print("⚠️ " .. tostring(msg)) end
+end
+
+-- 4️⃣ تعريف getgc (لو مش موجود)
+if not getgc then
+    getgc = function() return {} end
+end
+
+-- 5️⃣ تعريف WindUI (لو مش موجود)
+if not WindUI then
+    WindUI = _G.WindUI or getgenv().WindUI or {
+        Notify = function(_, data) 
+            print("🔔 [" .. data.Title .. "] " .. data.Content) 
+        end
+    }
+end
+
+-- 6️⃣ تعريف featureStates (لو مش موجود)
+if not featureStates then
+    featureStates = {}
+end
+
+-- 7️⃣ تعريف getgenv (لو مش موجود)
+if not getgenv then
+    getgenv = function() return _G end
+end
+
+-- 8️⃣ تعريف task (لو مش موجود)
+if not task then
+    task = {
+        wait = function(t) wait(t) end,
+        spawn = function(f) spawn(f) end,
+        defer = function(f) spawn(f) end,
+        delay = function(t, f) delay(t, f) end,
+    }
+end
+
+print("✅ All problems fixed successfully!")
 -- ============================================
 -- Player Modifications
 -- ============================================
