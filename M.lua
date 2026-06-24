@@ -1213,6 +1213,7 @@ local function CreateAutoTrimpGUI()
     local Button = Instance.new("TextButton")
     Button.Size = UDim2.new(1, 0, 1, 0)
     
+    -- Blood Moon Colors
     Button.BackgroundColor3 = Color3.fromHex("#1a0000")
     Button.BackgroundTransparency = 0.15
     Button.Text = "AUTO TRIMP: OFF"
@@ -1322,6 +1323,7 @@ local function CreateBackTrimpGUI()
     local Button = Instance.new("TextButton")
     Button.Size = UDim2.new(1, 0, 1, 0)
     
+    -- Blood Moon Colors
     Button.BackgroundColor3 = Color3.fromHex("#1a0000")
     Button.BackgroundTransparency = 0.15
     Button.Text = "BACK TRIMP: OFF"
@@ -1426,17 +1428,17 @@ RunService.RenderStepped:Connect(function()
             end
             wasAir = isAir
 
-            -- ✅ شرط التشغيل: AutoTrimp OR BackTrimp
+            -- شرط التشغيل: AutoTrimp OR BackTrimp
             if getgenv().AutoTrimpEnabled or getgenv().BackTrimpEnabled then
                 if isAir then
                     airAccumulator = airAccumulator + deltaTime
                     airTotalTime = airTotalTime + deltaTime
                     
                     if getgenv().AutoTrimpMode == "Incremental" then
-                        -- ✅ وضع التدريج (السرعة بتزيد مع الوقت في الهواء - لا نهائي)
-                        while airAccumulator >= 0.02 do
-                            airAccumulator = airAccumulator - 0.02
-                            currentSpeed = currentSpeed + 2.5
+                        -- ✅ وضع التدريج (السرعة بتزيد 2 كل ثانية)
+                        while airAccumulator >= 1.0 do
+                            airAccumulator = airAccumulator - 1.0
+                            currentSpeed = currentSpeed + 2
                         end
                     else
                         -- ✅ وضع الثابت (السرعة ثابتة على Speed Input)
@@ -1456,7 +1458,7 @@ RunService.RenderStepped:Connect(function()
                     lookDir = lookDir.Unit
                 end
 
-                -- ✅ BackTrimp (عكس الاتجاه) - يشتغل لوحده بدون AutoTrimp
+                -- BackTrimp (عكس الاتجاه) - يشتغل لوحده
                 if getgenv().BackTrimpEnabled then
                     lookDir = -lookDir
                 end
@@ -1553,7 +1555,7 @@ if MiscTab then
         end
     })
 
-    -- ✅ Dropdown لاختيار وضع السرعة (Incremental = لا نهائي, Constant = Speed Input)
+    -- Dropdown لاختيار وضع السرعة
     AutoTrimpSection:Dropdown({
         Title = "Speed Mode",
         Flag = "AutoTrimpModeDropdown",
@@ -1574,7 +1576,7 @@ if MiscTab then
         end
     })
 
-    -- Input سرعة AutoTrimp (يستخدم في وضع Constant فقط)
+    -- Input سرعة AutoTrimp
     AutoTrimpSection:Input({
         Title = "AutoTrimp Speed",
         Flag = "AutoTrimpSpeedInput",
@@ -1592,7 +1594,7 @@ if MiscTab then
         end
     })
 
-    -- ✅ Toggle تفعيل BackTrimp (يشتغل لوحده)
+    -- Toggle تفعيل BackTrimp (يشتغل لوحده)
     AutoTrimpSection:Toggle({
         Title = "Enable BackTrimp",
         Flag = "BackTrimpToggle",
@@ -1650,7 +1652,6 @@ if MiscTab then
 end
 
 print("[AutoTrimp & BackTrimp] Loaded successfully!")
-
 
 -- Auto Jump System v2 - WindUI Version
 -- ============================================
