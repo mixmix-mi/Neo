@@ -358,25 +358,7 @@ print("VIP Tools loaded successfully!")
 -- ================================
 
 -- البحث عن تبويب VIP أو إنشاؤه
-local VIPTab = nil
-if Tabs and Tabs.VIP then
-    VIPTab = Tabs.VIP
-elseif Window and Window.Tabs then
-    for _, tab in pairs(Window.Tabs) do
-        if tab and (tab.Title == "VIP" or tab.Title == "VIP Server" or tab.Title == "Premium") then
-            VIPTab = tab
-            break
-        end
-    end
-end
 
-if not VIPTab then
-    VIPTab = Window:Tab({
-        Title = "VIP",
-        Icon = "crown",
-        Locked = false
-    })
-end
 
 -- ================================
 -- Visuals Section
