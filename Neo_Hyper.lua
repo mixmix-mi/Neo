@@ -1,7 +1,7 @@
 -- ================================
 -- Chat Message - Neo Hyper
 -- ================================
---[[
+
 task.spawn(function()
     task.wait(1)
     
@@ -40,9 +40,9 @@ task.spawn(function()
     
     sendChatMessage("Welcome Owner Of Neo Hyper")
 end)
---]]
+
 -- ===== تعطيل المخرجات أولاً =====
---print = function() end
+print = function() end
 --pcall(function() end)
 
 -- ===== تحميل WindUI =====
