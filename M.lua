@@ -1163,7 +1163,7 @@ local PlayerGui = LP:WaitForChild("PlayerGui")
 getgenv().AutoTrimpEnabled = false
 getgenv().AutoTrimpSpeed = 50
 getgenv().AutoTrimpPosition = getgenv().AutoTrimpPosition or UDim2.new(0.5, -110, 0, 10)
-getgenv().AutoTrimpMode = "Incremental" -- "Incremental" or "Constant"
+getgenv().AutoTrimpMode = "Constant"
 getgenv().AutoTrimpIncrementRate = 2.5
 getgenv().BackTrimpEnabled = false
 
@@ -1227,7 +1227,7 @@ local function DebugPrint(message)
 end
 
 -- ================================
--- إنشاء زر AutoTrimp العائم (Blood Moon Style)
+-- إنشاء زر AutoTrimp العائم
 -- ================================
 local function CreateAutoTrimpGUI()
     if PlayerGui:FindFirstChild("AutoTrimpGUI") then
@@ -1336,7 +1336,7 @@ local function CreateAutoTrimpGUI()
 end
 
 -- ================================
--- إنشاء زر BackTrimp العائم (Blood Moon Style)
+-- إنشاء زر BackTrimp العائم
 -- ================================
 local function CreateBackTrimpGUI()
     if PlayerGui:FindFirstChild("BackTrimpGUI") then
@@ -1475,7 +1475,17 @@ RunService.RenderStepped:Connect(function()
                 if isAir then
                     airAccumulator = airAccumulator + deltaTime
                     airTotalTime = airTotalTime + deltaTime
-                    
+                    -- AutoTrimp Mode = Ground + Air (السرعة بتزيد في الأرض والهواء)
+
+if getgenv().AutoTrimpMode == "GroundAir" then
+    -- زيادة السرعة في الأرض والهواء
+    local incrementAmount = getgenv().AutoTrimpIncrementRate * deltaTime
+    currentSpeed = currentSpeed + incrementAmount
+    airAccumulator = 0
+    
+    DebugPrint("Speed: " .. truncate1Decimal(currentSpeed) .. 
+              " | Increment Rate: " .. getgenv().AutoTrimpIncrementRate)
+end
                     if getgenv().AutoTrimpMode == "Incremental" then
                         local incrementAmount = getgenv().AutoTrimpIncrementRate * deltaTime
                         currentSpeed = currentSpeed + incrementAmount
@@ -1538,13 +1548,14 @@ RunService.RenderStepped:Connect(function()
         end
     end
     
--- طباعة التصحيح كل ثانية
-if debugTimer >= 1 then
-    debugTimer = 0
-    DebugPrint("Current Speed: " .. truncate1Decimal(currentSpeed) .. 
-              " | Mode: " .. getgenv().AutoTrimpMode .. 
-              " | Increment Rate: " .. getgenv().AutoTrimpIncrementRate)
-end
+    -- ✅ طباعة التصحيح كل ثانية (بدون end) الزائدة
+    if debugTimer >= 1 then
+        debugTimer = 0
+        DebugPrint("Current Speed: " .. truncate1Decimal(currentSpeed) .. 
+                  " | Mode: " .. getgenv().AutoTrimpMode .. 
+                  " | Increment Rate: " .. getgenv().AutoTrimpIncrementRate)
+    end
+end)  -- ✅ هنا end واحدة تقفل الـ Connect
 
 -- ================================
 -- إعداد الـ Hook فوراً
@@ -1644,27 +1655,25 @@ if MiscTab then
             end
         end
     })
-
-    AutoTrimpSection:Dropdown({
-        Title = "Speed Mode",
-        Flag = "AutoTrimpModeDropdown",
-        Values = { "Incremental", "Constant" },
-        Default = "Incremental",
-        Callback = function(value)
-            getgenv().AutoTrimpMode = value
-            if value == "Constant" then
-                currentSpeed = getgenv().AutoTrimpSpeed
-            end
-            if WindUI and WindUI.Notify then
-                WindUI:Notify({
-                    Title = "AutoTrimp",
-                    Content = "Mode: " .. value,
-                    Duration = 2
-                })
-            end
+AutoTrimpSection:Dropdown({
+    Title = "Speed Mode",
+    Flag = "AutoTrimpModeDropdown",
+    Values = { "Incremental", "Constant", "GroundAir" },
+    Default = "Incremental",
+    Callback = function(value)
+        getgenv().AutoTrimpMode = value
+        if value == "Constant" then
+            currentSpeed = getgenv().AutoTrimpSpeed
         end
-    })
-
+        if WindUI and WindUI.Notify then
+            WindUI:Notify({
+                Title = "AutoTrimp",
+                Content = "Mode: " .. value,
+                Duration = 2
+            })
+        end
+    end
+})
     AutoTrimpSection:Input({
         Title = "Increment Rate",
         Flag = "AutoTrimpIncrementRateInput",
