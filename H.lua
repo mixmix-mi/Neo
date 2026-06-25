@@ -23,7 +23,7 @@ AboutSection:Paragraph({
     Title = "About Neo Hyper",    
     Desc = "Made By : M4X EVA,  Special thanks: Amal Jana ",
     Thumbnail = "rbxassetid://125307920527809",
-    ThumbnailSize = 60,
+    ThumbnailSize = 100,
 })
 
 -- ============================================
