@@ -55,7 +55,6 @@ WindUI.TransparencyValue = 0.15
 WindUI:SetTheme("Dark")
 WindUI.Notify = function() end
 
--- ===== إنشاء النافذة =====
 local Window = WindUI:CreateWindow({
     Title = "Neo Hyper v1.0",
     Icon = "solar:crown-minimalistic-outline",
@@ -64,7 +63,7 @@ local Window = WindUI:CreateWindow({
     Theme = "Dark",
     Folder = "Hyper_V1",
     Size = UDim2.fromOffset(550, 450),
-    KeySystem = {                                                   
+    --[[ KeySystem = {                                                   
         Note = "Example Key System. With platoboost.",              
         API = {                                                     
             { -- PlatoBoost
@@ -73,21 +72,32 @@ local Window = WindUI:CreateWindow({
                 Secret = "83088530-751f-4d3c-9a51-97effbd2e826",
             },                                                      
         },                                                          
-    },                                                              
+    }, ]]                                                              
     Topbar = {
         Height = 44,
         ButtonsType = "Mac",
     },
 })
 
+
 Window:EditOpenButton({
-    Title = "Neo Hyper",
+    Title = "NEO HYPER",
     Icon = "solar:crown-minimalistic-outline",
-    CornerRadius = UDim.new(0,16),
-    StrokeThickness = 0,
-    Color = ColorSequence.new(Color3.fromRGB(255,0,0), Color3.fromRGB(200,50,0)),
+    IconColor = Color3.fromRGB(255, 215, 0),
+    CornerRadius = UDim.new(1, 0),
+    StrokeThickness = 2,
+    StrokeColor = Color3.fromRGB(200, 50, 0),
+    Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 0, 0)),
+        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(200, 50, 0)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 0, 0)),
+    }),
     Enabled = true,
     Draggable = true,
+    Size = UDim2.new(0, 180, 0, 40),
+    TextColor = Color3.fromRGB(255, 255, 255),
+    TextSize = 18,
+    Font = Enum.Font.GothamBold,
 })
 -- ============================================
 -- GitHub Module Links Configuration (Ordered)
