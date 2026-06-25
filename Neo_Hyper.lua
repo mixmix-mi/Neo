@@ -85,7 +85,7 @@ Window:EditOpenButton({
     Icon = "solar:crown-minimalistic-outline",
     IconColor = Color3.fromRGB(255, 215, 0),
     CornerRadius = UDim.new(1, 0),
-    StrokeThickness = 2,
+    StrokeThickness = 1.5,
     StrokeColor = Color3.fromRGB(200, 50, 0),
     Color = ColorSequence.new({
         ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 0, 0)),
@@ -94,9 +94,9 @@ Window:EditOpenButton({
     }),
     Enabled = true,
     Draggable = true,
-    Size = UDim2.new(0, 180, 0, 40),
+    Size = UDim2.new(0, 130, 0, 32),
     TextColor = Color3.fromRGB(255, 255, 255),
-    TextSize = 18,
+    TextSize = 14,
     Font = Enum.Font.GothamBold,
 })
 -- ============================================
