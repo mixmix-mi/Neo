@@ -1142,6 +1142,7 @@ end
 
 -- تشغيل الموديول
 LoadInfiniteSlide()
+
 -- ================================
 -- AutoTrimp & BackTrimp (Blood Moon Style)
 -- ================================
@@ -1438,14 +1439,15 @@ RunService.RenderStepped:Connect(function()
             end
             wasAir = isAir
 
-            if getgenv().AutoTrimpEnabled then
+            -- ✅ شرط التشغيل: AutoTrimp OR BackTrimp
+            if getgenv().AutoTrimpEnabled or getgenv().BackTrimpEnabled then
                 if isAir then
                     airAccumulator = airAccumulator + deltaTime
                     airTotalTime = airTotalTime + deltaTime
                     while airAccumulator >= 0.04 do
                         airAccumulator = airAccumulator - 0.04
                         local increment = math.max(0.1, 2.5 * (0.04 / 1))
-                        currentSpeed = currentSpeed + increment  -- ✅ بدون Max Speed
+                        currentSpeed = currentSpeed + increment
                     end
                 else
                     airAccumulator = 0
@@ -1461,7 +1463,7 @@ RunService.RenderStepped:Connect(function()
                     lookDir = lookDir.Unit
                 end
 
-                -- ✅ BackTrimp (عكس الاتجاه)
+                -- ✅ BackTrimp (عكس الاتجاه) - يشتغل لوحده
                 if getgenv().BackTrimpEnabled then
                     lookDir = -lookDir
                 end
@@ -1581,7 +1583,7 @@ if MiscTab then
         end
     })
 
-    -- Toggle تفعيل BackTrimp
+    -- ✅ Toggle تفعيل BackTrimp (يشتغل لوحده)
     AutoTrimpSection:Toggle({
         Title = "Enable BackTrimp",
         Flag = "BackTrimpToggle",
@@ -1624,7 +1626,6 @@ if MiscTab then
 end
 
 print("[AutoTrimp & BackTrimp] Loaded successfully!")
-
 -- Auto Jump System v2 - WindUI Version
 -- ============================================
 pcall(function()
