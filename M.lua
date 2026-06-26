@@ -1144,7 +1144,7 @@ end
 LoadInfiniteSlide()
 
 -- ================================
--- AutoTrimp - Main Script (For Neo Hyper)
+-- AutoTrimp - Main Script (Neo Hyper)
 -- ================================
 
 -- الخدمات والمتغيرات
@@ -1156,14 +1156,14 @@ local LP = Players.LocalPlayer
 local camera = workspace.CurrentCamera
 
 -- ================================
--- المتغيرات العامة (getgenv عشان تبقى مرئية في كل الملفات)
+-- المتغيرات العامة
 -- ================================
 getgenv().AutoTrimpEnabled = false
 getgenv().BackTrimpEnabled = false
 getgenv().AutoTrimpBaseSpeed = 50
 getgenv().AutoTrimpStartSpeed = 0
 getgenv().AutoTrimpIncrementRate = 2.5
-getgenv().AutoTrimpMode = "Constant" -- "Constant" or "Incremental"
+getgenv().AutoTrimpMode = "Constant"
 
 local currentSpeed = getgenv().AutoTrimpBaseSpeed
 local lastTick = tick()
@@ -1191,6 +1191,16 @@ local function UpdateSpeedometer()
         if not speedometer then return end
     end
     speedometer.Text = tostring(truncate1Decimal(currentSpeed))
+end
+
+-- ✅ دالة إعادة تعيين السرعة للقيمة الصحيحة
+local function ResetSpeed()
+    if getgenv().AutoTrimpMode == "Constant" then
+        currentSpeed = getgenv().AutoTrimpBaseSpeed
+    else
+        currentSpeed = getgenv().AutoTrimpStartSpeed
+    end
+    if speedometer then UpdateSpeedometer() end
 end
 
 -- ================================
@@ -1252,7 +1262,7 @@ RunService.RenderStepped:Connect(function()
 end)
 
 -- ================================
--- إنشاء الزر العائم (يتم استدعاؤه من الواجهة)
+-- إنشاء الزر العائم
 -- ================================
 local floatingButton = nil
 local backFloatingButton = nil
@@ -1301,15 +1311,11 @@ local function CreateTrimpFloatingButton()
         Button.BackgroundColor3 = getgenv().AutoTrimpEnabled and Color3.fromHex("#3d0000") or Color3.fromHex("#1a0000")
         stroke.Color = getgenv().AutoTrimpEnabled and Color3.fromHex("#ff4444") or Color3.fromHex("#660000")
         
+        -- ✅ عند الإيقاف: إعادة تعيين السرعة
         if not getgenv().AutoTrimpEnabled then
             if activeBV then activeBV:Destroy() end
             activeBV = nil
-            if getgenv().AutoTrimpMode == "Constant" then
-                currentSpeed = getgenv().AutoTrimpBaseSpeed
-            else
-                currentSpeed = getgenv().AutoTrimpStartSpeed
-            end
-            if speedometer then speedometer.Text = "0" end
+            ResetSpeed()
         end
     end)
 
@@ -1400,17 +1406,10 @@ local function CreateBackTrimpFloatingButton()
         Button.BackgroundColor3 = getgenv().BackTrimpEnabled and Color3.fromHex("#3d0000") or Color3.fromHex("#1a0000")
         stroke.Color = getgenv().BackTrimpEnabled and Color3.fromHex("#ff4444") or Color3.fromHex("#660000")
         
-        if not getgenv().BackTrimpEnabled then
-            if not getgenv().AutoTrimpEnabled then
-                if activeBV then activeBV:Destroy() end
-                activeBV = nil
-                if getgenv().AutoTrimpMode == "Constant" then
-                    currentSpeed = getgenv().AutoTrimpBaseSpeed
-                else
-                    currentSpeed = getgenv().AutoTrimpStartSpeed
-                end
-                if speedometer then speedometer.Text = "0" end
-            end
+        if not getgenv().BackTrimpEnabled and not getgenv().AutoTrimpEnabled then
+            if activeBV then activeBV:Destroy() end
+            activeBV = nil
+            ResetSpeed()
         end
     end)
 
@@ -1458,13 +1457,8 @@ local function CreateBackTrimpFloatingButton()
 end
 
 -- ================================
--- إضافة الواجهة في تبويب Misc (ملف M.lua)
+-- الواجهة في تبويب Misc
 -- ================================
-
--- ✅ خلي الكود ده في ملف M.lua جوه تبويب Misc
--- مش محتاج task.spawn ولا SetupUI
-
--- البحث عن تبويب Misc
 local MiscTab = nil
 if Tabs and Tabs.Misc then
     MiscTab = Tabs.Misc
@@ -1473,14 +1467,13 @@ else
     return
 end
 
--- ✅ القسم هيتحط في المكان اللي انت حاططه فيه بالضبط
 local Section = MiscTab:Section({
     Title = "AutoTrimp",
     Side = "Left",
     Collapsed = false,
 })
 
--- Toggle AutoTrimp (الأمامي)
+-- Toggle AutoTrimp
 Section:Toggle({
     Title = "Enable AutoTrimp (Forward)",
     Flag = "AutoTrimpToggle",
@@ -1491,18 +1484,13 @@ Section:Toggle({
             if not getgenv().BackTrimpEnabled then
                 if activeBV then activeBV:Destroy() end
                 activeBV = nil
-                if getgenv().AutoTrimpMode == "Constant" then
-                    currentSpeed = getgenv().AutoTrimpBaseSpeed
-                else
-                    currentSpeed = getgenv().AutoTrimpStartSpeed
-                end
-                if speedometer then speedometer.Text = "0" end
+                ResetSpeed()
             end
         end
     end
 })
 
--- Toggle BackTrimp (الخلفي)
+-- Toggle BackTrimp
 Section:Toggle({
     Title = "Enable BackTrimp (Backward)",
     Flag = "BackTrimpToggle",
@@ -1512,19 +1500,13 @@ Section:Toggle({
         if not state and not getgenv().AutoTrimpEnabled then
             if activeBV then activeBV:Destroy() end
             activeBV = nil
-            if getgenv().AutoTrimpMode == "Constant" then
-                currentSpeed = getgenv().AutoTrimpBaseSpeed
-            else
-                currentSpeed = getgenv().AutoTrimpStartSpeed
-            end
-            if speedometer then speedometer.Text = "0" end
+            ResetSpeed()
         end
     end
 })
 
 Section:Space()
 
--- Dropdown Mode
 -- Dropdown Mode
 Section:Dropdown({
     Title = "Speed Mode",
@@ -1533,23 +1515,17 @@ Section:Dropdown({
     Default = "Constant",
     Callback = function(value)
         getgenv().AutoTrimpMode = value
-        if value == "Constant" then
-            currentSpeed = getgenv().AutoTrimpBaseSpeed
-        else
-            currentSpeed = getgenv().AutoTrimpStartSpeed
-        end
-        if speedometer then UpdateSpeedometer() end
+        ResetSpeed()
     end
 })
 
--- ✅ تفعيل الوضع الافتراضي فوراً
+-- تفعيل الوضع الافتراضي فوراً
 getgenv().AutoTrimpMode = "Constant"
-currentSpeed = getgenv().AutoTrimpBaseSpeed
-if speedometer then UpdateSpeedometer() end
+ResetSpeed()
 
 Section:Space()
 
--- Base Speed Input (الثابت)
+-- Base Speed Input
 Section:Input({
     Title = "Base Speed (Constant Mode)",
     Flag = "AutoTrimpBaseSpeedInput",
@@ -1561,14 +1537,13 @@ Section:Input({
         if num and num > 0 then
             getgenv().AutoTrimpBaseSpeed = num
             if getgenv().AutoTrimpMode == "Constant" then
-                currentSpeed = num
-                if speedometer then UpdateSpeedometer() end
+                ResetSpeed()
             end
         end
     end
 })
 
--- Start Speed Input (بداية السرعة للمتزايد)
+-- Start Speed Input
 Section:Input({
     Title = "Start Speed (Incremental Mode)",
     Flag = "AutoTrimpStartSpeedInput",
@@ -1579,15 +1554,14 @@ Section:Input({
         local num = tonumber(value)
         if num and num >= 0 then
             getgenv().AutoTrimpStartSpeed = num
-            if getgenv().AutoTrimpMode == "Incremental" and not getgenv().AutoTrimpEnabled then
-                currentSpeed = num
-                if speedometer then UpdateSpeedometer() end
+            if getgenv().AutoTrimpMode == "Incremental" then
+                ResetSpeed()
             end
         end
     end
 })
 
--- Increment Rate Input (الزيادة في الثانية)
+-- Increment Rate Input
 Section:Input({
     Title = "Increment Rate (Speed per second)",
     Flag = "AutoTrimpIncrementRateInput",
@@ -1608,12 +1582,14 @@ Section:Space()
 Section:Button({
     Title = "Reset Speed",
     Callback = function()
-        if getgenv().AutoTrimpMode == "Constant" then
-            currentSpeed = getgenv().AutoTrimpBaseSpeed
-        else
-            currentSpeed = getgenv().AutoTrimpStartSpeed
+        ResetSpeed()
+        if WindUI and WindUI.Notify then
+            WindUI:Notify({
+                Title = "AutoTrimp",
+                Content = "Speed reset to " .. math.floor(currentSpeed),
+                Duration = 2
+            })
         end
-        if speedometer then UpdateSpeedometer() end
     end
 })
 
