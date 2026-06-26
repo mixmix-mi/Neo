@@ -1525,6 +1525,7 @@ Section:Toggle({
 Section:Space()
 
 -- Dropdown Mode
+-- Dropdown Mode
 Section:Dropdown({
     Title = "Speed Mode",
     Flag = "AutoTrimpModeDropdown",
@@ -1540,6 +1541,11 @@ Section:Dropdown({
         if speedometer then UpdateSpeedometer() end
     end
 })
+
+-- ✅ تفعيل الوضع الافتراضي فوراً
+getgenv().AutoTrimpMode = "Constant"
+currentSpeed = getgenv().AutoTrimpBaseSpeed
+if speedometer then UpdateSpeedometer() end
 
 Section:Space()
 
