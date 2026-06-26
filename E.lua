@@ -828,6 +828,178 @@ end)
 
 print("[ESP] Nextbot features loaded!")     
 
+-- ============================================
+-- Round Timer - في تبويب ESP
+-- ============================================
+
+-- البحث عن تبويب ESP
+local ESPTab = nil
+if Tabs and Tabs.ESP then
+    ESPTab = Tabs.ESP
+elseif Window and Window.Tabs then
+    for _, tab in pairs(Window.Tabs) do
+        if tab and (tab.Title == "ESP" or tab.Title == "Visuals") then
+            ESPTab = tab
+            break
+        end
+    end
+end
+
+if not ESPTab then
+    ESPTab = Window:Tab({
+        Title = "ESP",
+        Icon = "eye",
+        Locked = false
+    })
+end
+
+-- ============================================
+-- Round Timer Section
+-- ============================================
+local TimerSection = ESPTab:Section({
+    Title = "Round Timer",
+    Side = "Left",
+    Collapsed = false,
+})
+
+-- ============================================
+-- متغيرات المؤقت
+-- ============================================
+local timerRunning = false
+local timerStartTime = 0
+local timerCurrentTime = 0
+local timerDisplay = nil
+local timerLoop = nil
+
+-- ============================================
+-- دوال المؤقت
+-- ============================================
+local function FormatTime(seconds)
+    local hours = math.floor(seconds / 3600)
+    local minutes = math.floor((seconds % 3600) / 60)
+    local secs = math.floor(seconds % 60)
+    if hours > 0 then
+        return string.format("%02d:%02d:%02d", hours, minutes, secs)
+    else
+        return string.format("%02d:%02d", minutes, secs)
+    end
+end
+
+local function UpdateTimerDisplay()
+    if timerDisplay then
+        timerDisplay:SetContent(FormatTime(timerCurrentTime))
+    end
+end
+
+local function StartTimer()
+    if timerRunning then return end
+    timerRunning = true
+    timerStartTime = tick() - timerCurrentTime
+    
+    if timerLoop then timerLoop:Disconnect() end
+    timerLoop = RunService.Heartbeat:Connect(function()
+        if timerRunning then
+            timerCurrentTime = tick() - timerStartTime
+            UpdateTimerDisplay()
+        end
+    end)
+    
+    WindUI:Notify({
+        Title = "Timer",
+        Content = "Started",
+        Duration = 2
+    })
+end
+
+local function StopTimer()
+    timerRunning = false
+    if timerLoop then
+        timerLoop:Disconnect()
+        timerLoop = nil
+    end
+    WindUI:Notify({
+        Title = "Timer",
+        Content = "Stopped at " .. FormatTime(timerCurrentTime),
+        Duration = 2
+    })
+end
+
+local function ResetTimer()
+    timerRunning = false
+    timerCurrentTime = 0
+    if timerLoop then
+        timerLoop:Disconnect()
+        timerLoop = nil
+    end
+    UpdateTimerDisplay()
+    WindUI:Notify({
+        Title = "Timer",
+        Content = "Reset",
+        Duration = 2
+    })
+end
+
+-- ============================================
+-- عرض المؤقت
+-- ============================================
+timerDisplay = TimerSection:Paragraph({
+    Title = "Round Time",
+    Content = "00:00",
+})
+
+TimerSection:Space()
+
+-- ============================================
+-- أزرار التحكم
+-- ============================================
+TimerSection:Button({
+    Title = "Start Timer",
+    Callback = StartTimer
+})
+
+TimerSection:Button({
+    Title = "Stop Timer",
+    Callback = StopTimer
+})
+
+TimerSection:Button({
+    Title = "Reset Timer",
+    Callback = ResetTimer
+})
+
+TimerSection:Space()
+
+-- ============================================
+-- Timer Settings
+-- ============================================
+TimerSection:Toggle({
+    Title = "Auto Start Timer",
+    Flag = "AutoStartTimerToggle",
+    Value = false,
+    Callback = function(state)
+        if state then
+            -- بدء المؤقت تلقائياً عند بدء الجولة
+            -- يمكنك ربطه بأحداث اللعبة هنا
+            local stats = workspace:FindFirstChild("Game") and workspace.Game:FindFirstChild("Stats")
+            if stats then
+                stats:GetAttributeChangedSignal("RoundStarted"):Connect(function()
+                    if stats:GetAttribute("RoundStarted") == true then
+                        ResetTimer()
+                        StartTimer()
+                    end
+                end)
+            end
+        end
+    end
+})
+
+print("[Round Timer] Loaded successfully in ESP tab!")
+
+-- ============================================
+-- الأسماء للـ elementsToRegister
+-- ============================================
+
+-- 
 -- ================================
 -- Performance & Visuals (في تبويب ESP)
 -- ================================
