@@ -1460,52 +1460,35 @@ end
 -- ================================
 -- إضافة الواجهة في تبويب Misc (ملف M.lua)
 -- ================================
-local function SetupUI()
-    -- البحث عن تبويب Misc
-    local MiscTab = nil
-    if Tabs and Tabs.Misc then
-        MiscTab = Tabs.Misc
-    else
-        print("[AutoTrimp] Misc tab not found!")
-        return
-    end
 
-    local Section = MiscTab:Section({
-        Title = "AutoTrimp",
-        Side = "Left",
-        Collapsed = false,
-    })
+-- ✅ خلي الكود ده في ملف M.lua جوه تبويب Misc
+-- مش محتاج task.spawn ولا SetupUI
 
-    -- Toggle AutoTrimp (الأمامي)
-    Section:Toggle({
-        Title = "Enable AutoTrimp (Forward)",
-        Flag = "AutoTrimpToggle",
-        Value = false,
-        Callback = function(state)
-            getgenv().AutoTrimpEnabled = state
-            if not state then
-                if not getgenv().BackTrimpEnabled then
-                    if activeBV then activeBV:Destroy() end
-                    activeBV = nil
-                    if getgenv().AutoTrimpMode == "Constant" then
-                        currentSpeed = getgenv().AutoTrimpBaseSpeed
-                    else
-                        currentSpeed = getgenv().AutoTrimpStartSpeed
-                    end
-                    if speedometer then speedometer.Text = "0" end
-                end
-            end
-        end
-    })
+-- البحث عن تبويب Misc
+local MiscTab = nil
+if Tabs and Tabs.Misc then
+    MiscTab = Tabs.Misc
+else
+    print("[AutoTrimp] Misc tab not found!")
+    return
+end
 
-    -- Toggle BackTrimp (الخلفي)
-    Section:Toggle({
-        Title = "Enable BackTrimp (Backward)",
-        Flag = "BackTrimpToggle",
-        Value = false,
-        Callback = function(state)
-            getgenv().BackTrimpEnabled = state
-            if not state and not getgenv().AutoTrimpEnabled then
+-- ✅ القسم هيتحط في المكان اللي انت حاططه فيه بالضبط
+local Section = MiscTab:Section({
+    Title = "AutoTrimp",
+    Side = "Left",
+    Collapsed = false,
+})
+
+-- Toggle AutoTrimp (الأمامي)
+Section:Toggle({
+    Title = "Enable AutoTrimp (Forward)",
+    Flag = "AutoTrimpToggle",
+    Value = false,
+    Callback = function(state)
+        getgenv().AutoTrimpEnabled = state
+        if not state then
+            if not getgenv().BackTrimpEnabled then
                 if activeBV then activeBV:Destroy() end
                 activeBV = nil
                 if getgenv().AutoTrimpMode == "Constant" then
@@ -1516,147 +1499,159 @@ local function SetupUI()
                 if speedometer then speedometer.Text = "0" end
             end
         end
-    })
+    end
+})
 
-    Section:Space()
-
-    -- Dropdown Mode
-    Section:Dropdown({
-        Title = "Speed Mode",
-        Flag = "AutoTrimpModeDropdown",
-        Values = { "Constant", "Incremental" },
-        Default = "Constant",
-        Callback = function(value)
-            getgenv().AutoTrimpMode = value
-            if value == "Constant" then
-                currentSpeed = getgenv().AutoTrimpBaseSpeed
-            else
-                currentSpeed = getgenv().AutoTrimpStartSpeed
-            end
-            if speedometer then UpdateSpeedometer() end
-        end
-    })
-
-    Section:Space()
-
-    -- Base Speed Input (الثابت)
-    Section:Input({
-        Title = "Base Speed (Constant Mode)",
-        Flag = "AutoTrimpBaseSpeedInput",
-        Value = tostring(getgenv().AutoTrimpBaseSpeed),
-        Placeholder = "Enter base speed",
-        Numeric = true,
-        Callback = function(value)
-            local num = tonumber(value)
-            if num and num > 0 then
-                getgenv().AutoTrimpBaseSpeed = num
-                if getgenv().AutoTrimpMode == "Constant" then
-                    currentSpeed = num
-                    if speedometer then UpdateSpeedometer() end
-                end
-            end
-        end
-    })
-
-    -- Start Speed Input (بداية السرعة للمتزايد)
-    Section:Input({
-        Title = "Start Speed (Incremental Mode)",
-        Flag = "AutoTrimpStartSpeedInput",
-        Value = tostring(getgenv().AutoTrimpStartSpeed),
-        Placeholder = "Speed to start from",
-        Numeric = true,
-        Callback = function(value)
-            local num = tonumber(value)
-            if num and num >= 0 then
-                getgenv().AutoTrimpStartSpeed = num
-                if getgenv().AutoTrimpMode == "Incremental" and not getgenv().AutoTrimpEnabled then
-                    currentSpeed = num
-                    if speedometer then UpdateSpeedometer() end
-                end
-            end
-        end
-    })
-
-    -- Increment Rate Input (الزيادة في الثانية)
-    Section:Input({
-        Title = "Increment Rate (Speed per second)",
-        Flag = "AutoTrimpIncrementRateInput",
-        Value = tostring(getgenv().AutoTrimpIncrementRate),
-        Placeholder = "Speed increase per second",
-        Numeric = true,
-        Callback = function(value)
-            local num = tonumber(value)
-            if num and num > 0 then
-                getgenv().AutoTrimpIncrementRate = num
-            end
-        end
-    })
-
-    Section:Space()
-
-    -- Reset Button
-    Section:Button({
-        Title = "Reset Speed",
-        Callback = function()
+-- Toggle BackTrimp (الخلفي)
+Section:Toggle({
+    Title = "Enable BackTrimp (Backward)",
+    Flag = "BackTrimpToggle",
+    Value = false,
+    Callback = function(state)
+        getgenv().BackTrimpEnabled = state
+        if not state and not getgenv().AutoTrimpEnabled then
+            if activeBV then activeBV:Destroy() end
+            activeBV = nil
             if getgenv().AutoTrimpMode == "Constant" then
                 currentSpeed = getgenv().AutoTrimpBaseSpeed
             else
                 currentSpeed = getgenv().AutoTrimpStartSpeed
             end
-            if speedometer then UpdateSpeedometer() end
+            if speedometer then speedometer.Text = "0" end
         end
-    })
+    end
+})
 
-    Section:Space()
+Section:Space()
 
-    -- Floating Buttons Toggles
-    local trimpFloating = nil
-    local backFloating = nil
+-- Dropdown Mode
+Section:Dropdown({
+    Title = "Speed Mode",
+    Flag = "AutoTrimpModeDropdown",
+    Values = { "Constant", "Incremental" },
+    Default = "Constant",
+    Callback = function(value)
+        getgenv().AutoTrimpMode = value
+        if value == "Constant" then
+            currentSpeed = getgenv().AutoTrimpBaseSpeed
+        else
+            currentSpeed = getgenv().AutoTrimpStartSpeed
+        end
+        if speedometer then UpdateSpeedometer() end
+    end
+})
 
-    Section:Toggle({
-        Title = "Show Trimp Floating Button",
-        Flag = "AutoTrimpFloatingToggle",
-        Value = false,
-        Callback = function(state)
-            if state then
-                trimpFloating = CreateTrimpFloatingButton()
-                trimpFloating.Enabled = true
-            else
-                if trimpFloating then
-                    trimpFloating:Destroy()
-                    trimpFloating = nil
-                end
+Section:Space()
+
+-- Base Speed Input (الثابت)
+Section:Input({
+    Title = "Base Speed (Constant Mode)",
+    Flag = "AutoTrimpBaseSpeedInput",
+    Value = tostring(getgenv().AutoTrimpBaseSpeed),
+    Placeholder = "Enter base speed",
+    Numeric = true,
+    Callback = function(value)
+        local num = tonumber(value)
+        if num and num > 0 then
+            getgenv().AutoTrimpBaseSpeed = num
+            if getgenv().AutoTrimpMode == "Constant" then
+                currentSpeed = num
+                if speedometer then UpdateSpeedometer() end
             end
         end
-    })
+    end
+})
 
-    Section:Toggle({
-        Title = "Show BackTrimp Floating Button",
-        Flag = "BackTrimpFloatingToggle",
-        Value = false,
-        Callback = function(state)
-            if state then
-                backFloating = CreateBackTrimpFloatingButton()
-                backFloating.Enabled = true
-            else
-                if backFloating then
-                    backFloating:Destroy()
-                    backFloating = nil
-                end
+-- Start Speed Input (بداية السرعة للمتزايد)
+Section:Input({
+    Title = "Start Speed (Incremental Mode)",
+    Flag = "AutoTrimpStartSpeedInput",
+    Value = tostring(getgenv().AutoTrimpStartSpeed),
+    Placeholder = "Speed to start from",
+    Numeric = true,
+    Callback = function(value)
+        local num = tonumber(value)
+        if num and num >= 0 then
+            getgenv().AutoTrimpStartSpeed = num
+            if getgenv().AutoTrimpMode == "Incremental" and not getgenv().AutoTrimpEnabled then
+                currentSpeed = num
+                if speedometer then UpdateSpeedometer() end
             end
         end
-    })
-end
+    end
+})
 
--- ================================
--- بدء التشغيل
--- ================================
-task.spawn(function()
-    task.wait(0.5)
-    SetupUI()
-end)
+-- Increment Rate Input (الزيادة في الثانية)
+Section:Input({
+    Title = "Increment Rate (Speed per second)",
+    Flag = "AutoTrimpIncrementRateInput",
+    Value = tostring(getgenv().AutoTrimpIncrementRate),
+    Placeholder = "Speed increase per second",
+    Numeric = true,
+    Callback = function(value)
+        local num = tonumber(value)
+        if num and num > 0 then
+            getgenv().AutoTrimpIncrementRate = num
+        end
+    end
+})
 
-print("[AutoTrimp] Main script loaded successfully!")
+Section:Space()
+
+-- Reset Button
+Section:Button({
+    Title = "Reset Speed",
+    Callback = function()
+        if getgenv().AutoTrimpMode == "Constant" then
+            currentSpeed = getgenv().AutoTrimpBaseSpeed
+        else
+            currentSpeed = getgenv().AutoTrimpStartSpeed
+        end
+        if speedometer then UpdateSpeedometer() end
+    end
+})
+
+Section:Space()
+
+-- Floating Buttons Toggles
+local trimpFloating = nil
+local backFloating = nil
+
+Section:Toggle({
+    Title = "Show Trimp Floating Button",
+    Flag = "AutoTrimpFloatingToggle",
+    Value = false,
+    Callback = function(state)
+        if state then
+            trimpFloating = CreateTrimpFloatingButton()
+            trimpFloating.Enabled = true
+        else
+            if trimpFloating then
+                trimpFloating:Destroy()
+                trimpFloating = nil
+            end
+        end
+    end
+})
+
+Section:Toggle({
+    Title = "Show BackTrimp Floating Button",
+    Flag = "BackTrimpFloatingToggle",
+    Value = false,
+    Callback = function(state)
+        if state then
+            backFloating = CreateBackTrimpFloatingButton()
+            backFloating.Enabled = true
+        else
+            if backFloating then
+                backFloating:Destroy()
+                backFloating = nil
+            end
+        end
+    end
+})
+
+print("[AutoTrimp] UI loaded successfully in Misc tab!")
 
 -- Auto Jump System v2 - WindUI Version
 -- ============================================
