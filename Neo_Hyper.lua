@@ -176,6 +176,10 @@ local SettingsTab = Window:Tab({
     Locked = false,
 })
 
+-- ================================
+-- FPS Panel - Fixed (Blood Moon Style)
+-- ================================
+
 local FPSSection = SettingsTab:Section({
     Title = "FPS, Ping & Timer",
     Side = "Left",
@@ -187,24 +191,32 @@ local fpsTimerGui = nil
 local fpsUpdateConnection = nil
 
 local function CreateFPSPanel()
-    local playerGui = LP:WaitForChild("PlayerGui")
+    local playerGui = game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui")
     
-    if fpsTimerGui then fpsTimerGui:Destroy() end
-    if fpsUpdateConnection then fpsUpdateConnection:Disconnect() end
+    if fpsTimerGui then 
+        pcall(function() fpsTimerGui:Destroy() end) 
+        fpsTimerGui = nil
+    end
+    if fpsUpdateConnection then 
+        pcall(function() fpsUpdateConnection:Disconnect() end) 
+        fpsUpdateConnection = nil
+    end
     
-    fpsTimerGui = Instance.new("ScreenGui")
-    fpsTimerGui.Name = "HyperFPSPanel"
-    fpsTimerGui.ResetOnSpawn = false
-    fpsTimerGui.Parent = playerGui
+    local screenGui = Instance.new("ScreenGui")
+    screenGui.Name = "HyperFPSPanel"
+    screenGui.ResetOnSpawn = false
+    screenGui.Parent = playerGui
+    screenGui.Enabled = true  -- ✅ تأكد إنها مفعلة
     
     local container = Instance.new("Frame")
     container.Size = UDim2.new(0, 180, 0, 55)
     container.Position = UDim2.new(0.01, 0, 0.01, 0)
     container.BackgroundColor3 = Color3.fromHex("#1a0000")
     container.BackgroundTransparency = 0.1
-    container.Parent = fpsTimerGui
+    container.Parent = screenGui
     container.Active = true
     container.Draggable = true
+    container.Visible = true  -- ✅ تأكد إنها ظاهرة
     
     local corner = Instance.new("UICorner")
     corner.CornerRadius = UDim.new(0.2, 0)
@@ -225,6 +237,7 @@ local function CreateFPSPanel()
     fpsLabel.TextSize = 12
     fpsLabel.TextXAlignment = Enum.TextXAlignment.Center
     fpsLabel.Parent = container
+    fpsLabel.Visible = true  -- ✅ تأكد إنها ظاهرة
     
     local timerLabel = Instance.new("TextLabel")
     timerLabel.Size = UDim2.new(1, 0, 0.5, 0)
@@ -236,14 +249,16 @@ local function CreateFPSPanel()
     timerLabel.TextSize = 12
     timerLabel.TextXAlignment = Enum.TextXAlignment.Center
     timerLabel.Parent = container
+    timerLabel.Visible = true  -- ✅ تأكد إنها ظاهرة
     
     local startTime = tick()
     local frameCount = 0
     local lastUpdate = tick()
     local currentFPS = 0
+    local RunService = game:GetService("RunService")
     
     fpsUpdateConnection = RunService.RenderStepped:Connect(function()
-        if not fpsTimerGui or not fpsTimerGui.Parent then
+        if not screenGui or not screenGui.Parent then
             if fpsUpdateConnection then
                 fpsUpdateConnection:Disconnect()
                 fpsUpdateConnection = nil
@@ -319,7 +334,7 @@ local function CreateFPSPanel()
         end
     end)
     
-    return fpsTimerGui
+    return screenGui
 end
 
 FPSSection:Toggle({
@@ -334,10 +349,10 @@ FPSSection:Toggle({
         else
             if fpsTimerGui then
                 if fpsUpdateConnection then
-                    fpsUpdateConnection:Disconnect()
+                    pcall(function() fpsUpdateConnection:Disconnect() end)
                     fpsUpdateConnection = nil
                 end
-                fpsTimerGui:Destroy()
+                pcall(function() fpsTimerGui:Destroy() end)
                 fpsTimerGui = nil
             end
             WindUI:Notify({ Title = "FPS Panel", Content = "Panel hidden", Duration = 2 })
