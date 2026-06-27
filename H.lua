@@ -609,9 +609,6 @@ TeleportSection:Button({
     end
 })
 
-TeleportSection:Space()
-
-
 -- ================================
 -- Custom Top Bar (Leaderboard, Zoom, Front View)
 -- Hold to Enable Style
