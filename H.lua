@@ -478,6 +478,7 @@ TeleportSection:Button({
 -- ================================
 TeleportSection:Button({
     Title = "Rescue & Return",
+    Desc = "Requires Auto Carry to be enabled in Misc tab first"
     Callback = function()
         if not selectedPlayer then
             WindUI:Notify({
@@ -610,98 +611,7 @@ TeleportSection:Button({
 
 TeleportSection:Space()
 
--- ================================
--- 4️⃣ Bring Player to Me (جلب اللاعب إليك)
--- ================================
-TeleportSection:Button({
-    Title = "Bring Player to Me",
-    Callback = function()
-        if not selectedPlayer then
-            WindUI:Notify({
-                Title = "Error",
-                Content = "Please select a player first",
-                Duration = 2
-            })
-            return
-        end
-        
-        if not selectedPlayer.Character then
-            WindUI:Notify({
-                Title = "Error",
-                Content = "Player has no character",
-                Duration = 2
-            })
-            return
-        end
-        
-        local char = LP.Character
-        if not char then return end
-        local hrp = char:FindFirstChild("HumanoidRootPart")
-        if not hrp then return end
-        
-        local targetHrp = selectedPlayer.Character:FindFirstChild("HumanoidRootPart")
-        if not targetHrp then return end
-        
-        targetHrp.CFrame = CFrame.new(hrp.Position + Vector3.new(0, 3, 0))
-        
-        WindUI:Notify({
-            Title = "Bring",
-            Content = "Brought " .. selectedPlayer.Name .. " to you",
-            Duration = 2
-        })
-    end
-})
 
--- ================================
--- 5️⃣ Revive Player (إحياء اللاعب)
--- ================================
-TeleportSection:Button({
-    Title = "Revive Player",
-    Callback = function()
-        if not selectedPlayer then
-            WindUI:Notify({
-                Title = "Error",
-                Content = "Please select a player first",
-                Duration = 2
-            })
-            return
-        end
-        
-        if not selectedPlayer.Character then
-            WindUI:Notify({
-                Title = "Error",
-                Content = "Player has no character",
-                Duration = 2
-            })
-            return
-        end
-        
-        if not selectedPlayer.Character:GetAttribute("Downed") then
-            WindUI:Notify({
-                Title = "Info",
-                Content = selectedPlayer.Name .. " is not downed",
-                Duration = 2
-            })
-            return
-        end
-        
-        pcall(function()
-            local interact = ReplicatedStorage:FindFirstChild("Events") and
-                             ReplicatedStorage.Events:FindFirstChild("Character") and
-                             ReplicatedStorage.Events.Character:FindFirstChild("Interact")
-            if interact then
-                interact:FireServer("Revive", true, selectedPlayer.Name)
-                WindUI:Notify({
-                    Title = "Revive",
-                    Content = "Revived " .. selectedPlayer.Name,
-                    Duration = 2
-                })
-            end
-        end)
-    end
-})
-
-print("[Teleport & Rescue] Loaded in Home tab!")
 -- ================================
 -- Custom Top Bar (Leaderboard, Zoom, Front View)
 -- Hold to Enable Style
