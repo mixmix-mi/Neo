@@ -758,7 +758,7 @@ InteractionsSection:Toggle({
 InteractionsSection:Input({
     Title = "Carry Delay (s)",
     Flag = "CarryDelayInput",  -- 👈 أضف ده
-    Placeholder = "0.1",
+    Placeholder = "0.00001",
     Value = tostring(getgenv().AutoCarryDelay),
     Callback = function(val)
         local n = tonumber(val)
