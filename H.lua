@@ -478,7 +478,7 @@ TeleportSection:Button({
 -- ================================
 TeleportSection:Button({
     Title = "Rescue & Return",
-    Desc = "Requires Auto Carry to be enabled in Misc tab first"
+    Desc = "Requires Auto Carry to be enabled in Misc tab first",
     Callback = function()
         if not selectedPlayer then
             WindUI:Notify({
