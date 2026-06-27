@@ -44,6 +44,16 @@ end)
 -- ===== تعطيل المخرجات أولاً =====
 print = function() end
 --pcall(function() end)
+-- ================================
+-- الحتة اللي هتضيفها في السكربت الأساسي
+-- ================================
+
+-- 1️⃣ دالة جلب الصورة (حطها في بداية السكربت بعد تحميل WindUI)
+local function GetPlayerAvatar()
+    local userId = game:GetService("Players").LocalPlayer.UserId
+    return "rbxthumb://type=AvatarHeadShot&id=" .. userId .. "&w=150&h=150"
+end
+
 
 -- ===== تحميل WindUI =====
 local WindUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua"))()
@@ -54,7 +64,6 @@ end
 WindUI.TransparencyValue = 0.15
 WindUI:SetTheme("Dark")
 WindUI.Notify = function() end
-
 local Window = WindUI:CreateWindow({
     Title = "Neo Hyper v1.0",
     Icon = "solar:crown-minimalistic-outline",
@@ -63,6 +72,23 @@ local Window = WindUI:CreateWindow({
     Theme = "Dark",
     Folder = "Hyper_V1",
     Size = UDim2.fromOffset(550, 450),
+    
+    -- ✅ User Card
+    User = {
+        Enabled = true,
+        Anonymous = false,
+        Image = GetPlayerAvatar(),
+        Title = game:GetService("Players").LocalPlayer.DisplayName,
+        Description = "@" .. game:GetService("Players").LocalPlayer.Name,
+        Callback = function()
+            WindUI:Notify({
+                Title = "Profile",
+                Content = "Player: " .. game:GetService("Players").LocalPlayer.Name,
+                Duration = 2
+            })
+        end,
+    },
+    
     --[[ KeySystem = {                                                   
         Note = "Example Key System. With platoboost.",              
         API = {                                                     
