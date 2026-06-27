@@ -21,7 +21,7 @@ local AboutSection = Main:Section({
 
 AboutSection:Paragraph({    
     Title = "About Neo Hyper",    
-    Desc = "Made By : M4X EVA,  Special thanks: Amal Jana ",
+    Desc = "Made By : M4X= Mitto | EVA,  Special thanks: Amal Jana Malak ",
     Thumbnail = "rbxassetid://105737557267824",
     ThumbnailSize = 100,
 })
