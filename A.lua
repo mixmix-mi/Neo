@@ -273,20 +273,21 @@ pcall(function()
     })
     
     -- Ticket Farm Toggle
-    FarmSystemsSection:Toggle({
-        Title = "Ticket Farm",
-        Desc = "Automatically collect tickets from the map",
-        Value = false,
-        Callback = function(state)
-            ticketFarmActive = state
-            if state then
-                StartTicketFarm()
-            else
-                StopTicketFarm()
-            end
-        end
-    })
     
+    FarmSystemsSection:Toggle({
+    Title = "Ticket Farm",
+    Desc = "Automatically collect tickets from the map",
+    Value = false,
+    Callback = function(state)
+        ticketFarmActive = state
+        if state then
+            StartTicketFarm()
+        else
+            StopTicketFarm()
+        end
+    end,
+    Locked = true,  -- ✅ يظهر مقفول ومش قابل للتغيير
+})
     -- Cash Farm Toggle
     FarmSystemsSection:Toggle({
         Title = "Cash Farm",
