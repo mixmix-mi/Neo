@@ -69,6 +69,7 @@ local Window = WindUI:CreateWindow({
     Icon = "solar:crown-minimalistic-outline",
     Author = "By M4X EVA",
     HideSearchBar = true,
+    NewElements = true,
     Theme = "Dark",
     Folder = "Hyper_V1",
     Size = UDim2.fromOffset(550, 450),
