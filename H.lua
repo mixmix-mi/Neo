@@ -264,6 +264,8 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
 
+getgenv().RescueWaitTime = 2
+
 local selectedPlayer = nil
 local savedPosition = nil
 local refreshConnection = nil
@@ -474,12 +476,46 @@ TeleportSection:Button({
 })
 
 -- ================================
--- 2️⃣ Rescue Player & Return (أنقذ وارجع)
+-- Rescue Timer Input
+-- ================================
+
+-- Input لتحديد وقت الانتظار قبل العودة (بالثواني)
+local RescueTimeInput = TeleportSection:Input({
+    Title = "Rescue Wait Time (Seconds)",
+    Flag = "RescueWaitTime",
+    Placeholder = "Enter seconds (1-10)",
+    Value = "2",
+    Numeric = true,
+    Callback = function(value)
+        local num = tonumber(value)
+        if num and num >= 1 and num <= 10 then
+            getgenv().RescueWaitTime = num
+        else
+            WindUI:Notify({
+                Title = "Error",
+                Content = "Please enter a value between 1-10 seconds",
+                Duration = 2
+            })
+        end
+    end
+})
+
+-- ================================
+-- استخدام القيمة في زر Rescue
 -- ================================
 TeleportSection:Button({
     Title = "Rescue & Return",
     Desc = "Requires Auto Carry to be enabled in Misc tab first",
     Callback = function()
+        if isRescuing then
+            WindUI:Notify({
+                Title = "Busy",
+                Content = "Already rescuing a player...",
+                Duration = 2
+            })
+            return
+        end
+        
         if not selectedPlayer then
             WindUI:Notify({
                 Title = "Error",
@@ -503,8 +539,9 @@ TeleportSection:Button({
         local hrp = char:FindFirstChild("HumanoidRootPart")
         if not hrp then return end
         
-        local returnPosition = hrp.Position
+        isRescuing = true
         
+        local returnPosition = hrp.Position
         local targetHrp = selectedPlayer.Character:FindFirstChild("HumanoidRootPart")
         if not targetHrp then return end
         
@@ -535,19 +572,26 @@ TeleportSection:Button({
             end)
         end
         
+        -- ✅ استخدام الوقت المدخل من المستخدم
+        local waitTime = getgenv().RescueWaitTime or 2
+        task.wait(waitTime)
+        
         -- العودة للمكان الأصلي
-        task.wait(0.5)
         hrp.CFrame = CFrame.new(returnPosition)
         
         WindUI:Notify({
             Title = "Return",
-            Content = "Returned to original position",
+            Content = "Returned after " .. waitTime .. " seconds",
             Duration = 2
         })
+        
+        isRescuing = false
     end
 })
 
-TeleportSection:Space()
+-- ================================
+-- ضبط القيمة الافتراضية
+-- ================================
 
 -- ================================
 -- 3️⃣ Rescue All Downed Players (إنقاذ كل الميتين)
