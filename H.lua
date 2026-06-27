@@ -244,6 +244,8 @@ LocalPlayer.CharacterAdded:Connect(function(newChar)
 end)
 
 print("✅ Fly system loaded in Home tab!")
+
+
 -- ================================
 -- Teleport & Rescue Section
 -- ================================
@@ -264,21 +266,25 @@ local Workspace = game:GetService("Workspace")
 
 local selectedPlayer = nil
 local savedPosition = nil
+local refreshConnection = nil
+local refreshEnabled = false
 
 -- ================================
--- دالة الحصول على قائمة اللاعبين (الميتين بس)
+-- دالة الحصول على قائمة جميع اللاعبين
 -- ================================
 local function GetPlayerList()
     local list = {}
     for _, player in ipairs(Players:GetPlayers()) do
         if player ~= LP then
+            local status = ""
             if player.Character and player.Character:GetAttribute("Downed") then
-                table.insert(list, player.Name)
+                status = " [DOWNED]"
             end
+            table.insert(list, player.Name .. status)
         end
     end
     if #list == 0 then
-        table.insert(list, "No downed players")
+        table.insert(list, "No players found")
     end
     return list
 end
@@ -293,17 +299,44 @@ local function UpdateDropdown()
 end
 
 -- ================================
--- Dropdown لاختيار اللاعب (الميتين بس)
+-- بدء التحديث التلقائي (كل 2 ثانية)
+-- ================================
+local function StartAutoRefresh()
+    if refreshConnection then
+        refreshConnection:Disconnect()
+        refreshConnection = nil
+    end
+    
+    refreshConnection = RunService.Heartbeat:Connect(function()
+        if refreshEnabled then
+            UpdateDropdown()
+        end
+    end)
+end
+
+-- ================================
+-- إيقاف التحديث التلقائي
+-- ================================
+local function StopAutoRefresh()
+    if refreshConnection then
+        refreshConnection:Disconnect()
+        refreshConnection = nil
+    end
+end
+
+-- ================================
+-- Dropdown لاختيار اللاعب (كل اللاعبين)
 -- ================================
 local PlayerDropdown = TeleportSection:Dropdown({
-    Title = "Select Downed Player",
+    Title = "Select Player",
     Flag = "TeleportPlayerDropdown",
     Values = GetPlayerList(),
-    Default = "No downed players",
+    Default = "No players found",
     Callback = function(value)
-        if value and value ~= "No downed players" then
+        if value and value ~= "No players found" then
+            local name = value:gsub("%s?%[.*%]%s?", ""):gsub("%s+$", "")
             for _, player in ipairs(Players:GetPlayers()) do
-                if player.Name == value or player.DisplayName == value then
+                if player.Name == name or player.DisplayName == name then
                     selectedPlayer = player
                     break
                 end
@@ -316,7 +349,7 @@ local PlayerDropdown = TeleportSection:Dropdown({
 TeleportSection:Space()
 
 -- ================================
--- زر تحديث القائمة
+-- زر تحديث القائمة يدوي
 -- ================================
 TeleportSection:Button({
     Title = "Refresh List",
@@ -327,6 +360,33 @@ TeleportSection:Button({
             Content = "Player list refreshed",
             Duration = 2
         })
+    end
+})
+
+-- ================================
+-- Toggle التحديث التلقائي (كل 2 ثانية)
+-- ================================
+TeleportSection:Toggle({
+    Title = "Auto Refresh (Every 2s)",
+    Flag = "AutoRefreshPlayers",
+    Value = false,
+    Callback = function(state)
+        refreshEnabled = state
+        if state then
+            StartAutoRefresh()
+            WindUI:Notify({
+                Title = "Auto Refresh",
+                Content = "Enabled - Updates every 2 seconds",
+                Duration = 2
+            })
+        else
+            StopAutoRefresh()
+            WindUI:Notify({
+                Title = "Auto Refresh",
+                Content = "Disabled",
+                Duration = 2
+            })
+        end
     end
 })
 
@@ -343,10 +403,13 @@ local playerInfo = TeleportSection:Paragraph({
 local function UpdatePlayerInfo()
     if selectedPlayer then
         local char = selectedPlayer.Character
-        local status = "DOWNED"
+        local status = "Alive"
         local position = "Unknown"
         
         if char then
+            if char:GetAttribute("Downed") then
+                status = "DOWNED"
+            end
             local hrp = char:FindFirstChild("HumanoidRootPart")
             if hrp then
                 position = string.format("X: %.1f, Y: %.1f, Z: %.1f", hrp.Position.X, hrp.Position.Y, hrp.Position.Z)
@@ -367,15 +430,15 @@ end
 TeleportSection:Space()
 
 -- ================================
--- 1️⃣ Teleport to Player (تليفورت للاعب الميت)
+-- 1️⃣ Teleport to Player (تليفورت للاعب)
 -- ================================
 TeleportSection:Button({
-    Title = "Teleport to Downed Player",
+    Title = "Teleport to Player",
     Callback = function()
         if not selectedPlayer then
             WindUI:Notify({
                 Title = "Error",
-                Content = "Please select a downed player first",
+                Content = "Please select a player first",
                 Duration = 2
             })
             return
@@ -411,7 +474,7 @@ TeleportSection:Button({
 })
 
 -- ================================
--- 2️⃣ Rescue Player & Return (أنقذ الميت وارجع)
+-- 2️⃣ Rescue Player & Return (أنقذ وارجع)
 -- ================================
 TeleportSection:Button({
     Title = "Rescue & Return",
@@ -419,7 +482,7 @@ TeleportSection:Button({
         if not selectedPlayer then
             WindUI:Notify({
                 Title = "Error",
-                Content = "Please select a downed player first",
+                Content = "Please select a player first",
                 Duration = 2
             })
             return
@@ -444,7 +507,7 @@ TeleportSection:Button({
         local targetHrp = selectedPlayer.Character:FindFirstChild("HumanoidRootPart")
         if not targetHrp then return end
         
-        -- التليفورت للاعب الميت
+        -- التليفورت للاعب
         hrp.CFrame = CFrame.new(targetHrp.Position + Vector3.new(0, 3, 0))
         
         WindUI:Notify({
@@ -453,22 +516,23 @@ TeleportSection:Button({
             Duration = 2
         })
         
-        -- إحياء اللاعب
-        task.wait(0.5)
-        
-        pcall(function()
-            local interact = ReplicatedStorage:FindFirstChild("Events") and
-                             ReplicatedStorage.Events:FindFirstChild("Character") and
-                             ReplicatedStorage.Events.Character:FindFirstChild("Interact")
-            if interact then
-                interact:FireServer("Revive", true, selectedPlayer.Name)
-                WindUI:Notify({
-                    Title = "Revive",
-                    Content = "Revived " .. selectedPlayer.Name,
-                    Duration = 2
-                })
-            end
-        end)
+        -- إحياء اللاعب إذا كان ميت
+        if selectedPlayer.Character:GetAttribute("Downed") then
+            task.wait(0.5)
+            pcall(function()
+                local interact = ReplicatedStorage:FindFirstChild("Events") and
+                                 ReplicatedStorage.Events:FindFirstChild("Character") and
+                                 ReplicatedStorage.Events.Character:FindFirstChild("Interact")
+                if interact then
+                    interact:FireServer("Revive", true, selectedPlayer.Name)
+                    WindUI:Notify({
+                        Title = "Revive",
+                        Content = "Revived " .. selectedPlayer.Name,
+                        Duration = 2
+                    })
+                end
+            end)
+        end
         
         -- العودة للمكان الأصلي
         task.wait(0.5)
@@ -547,15 +611,15 @@ TeleportSection:Button({
 TeleportSection:Space()
 
 -- ================================
--- 4️⃣ Bring Downed Player to Me (جلب الميت إليك)
+-- 4️⃣ Bring Player to Me (جلب اللاعب إليك)
 -- ================================
 TeleportSection:Button({
-    Title = "Bring Downed Player",
+    Title = "Bring Player to Me",
     Callback = function()
         if not selectedPlayer then
             WindUI:Notify({
                 Title = "Error",
-                Content = "Please select a downed player first",
+                Content = "Please select a player first",
                 Duration = 2
             })
             return
@@ -589,15 +653,15 @@ TeleportSection:Button({
 })
 
 -- ================================
--- 5️⃣ Revive Downed Player (إحياء الميت)
+-- 5️⃣ Revive Player (إحياء اللاعب)
 -- ================================
 TeleportSection:Button({
-    Title = "Revive Downed Player",
+    Title = "Revive Player",
     Callback = function()
         if not selectedPlayer then
             WindUI:Notify({
                 Title = "Error",
-                Content = "Please select a downed player first",
+                Content = "Please select a player first",
                 Duration = 2
             })
             return
@@ -607,6 +671,15 @@ TeleportSection:Button({
             WindUI:Notify({
                 Title = "Error",
                 Content = "Player has no character",
+                Duration = 2
+            })
+            return
+        end
+        
+        if not selectedPlayer.Character:GetAttribute("Downed") then
+            WindUI:Notify({
+                Title = "Info",
+                Content = selectedPlayer.Name .. " is not downed",
                 Duration = 2
             })
             return
@@ -628,7 +701,7 @@ TeleportSection:Button({
     end
 })
 
-
+print("[Teleport & Rescue] Loaded in Home tab!")
 -- ================================
 -- Custom Top Bar (Leaderboard, Zoom, Front View)
 -- Hold to Enable Style
